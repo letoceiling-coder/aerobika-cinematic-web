@@ -48,40 +48,34 @@ const MobileNav = () => {
       initial={{ y: 100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-      className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-border/50 bg-card/95 backdrop-blur-xl safe-area-bottom"
+      className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-border/50 bg-card/95 backdrop-blur-xl"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 8px)" }}
     >
-      <div className="flex items-center justify-around h-14 pb-4">
+      <div className="flex items-stretch justify-around h-12">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <motion.button
               key={tab.id}
               onClick={tab.action}
-              whileTap={{ scale: 0.85 }}
-              className={`flex-1 flex flex-col items-center gap-1 relative py-2 transition-colors duration-200 ${
+              whileTap={{ scale: 0.9 }}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 relative transition-colors duration-200 ${
                 isActive ? "text-primary" : "text-muted-foreground"
               }`}
             >
               <div className="relative">
-                <tab.icon className="w-6 h-6" />
-                {tab.badge && tab.badge > 0 && (
+                <tab.icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
+                {tab.badge != null && tab.badge > 0 && (
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute -top-2 -right-3 w-5 h-5 rounded-full gold-gradient text-[10px] font-bold text-primary-foreground flex items-center justify-center"
+                    className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 rounded-full gold-gradient text-[9px] font-bold text-primary-foreground flex items-center justify-center px-1"
                   >
                     {tab.badge}
                   </motion.span>
                 )}
               </div>
-              <span className="text-xs font-medium">{tab.label}</span>
-              {isActive && (
-                <motion.div
-                  layoutId="mobile-tab-indicator"
-                  className="absolute -bottom-0.5 w-8 h-0.5 rounded-full gold-gradient"
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                />
-              )}
+              <span className="text-[10px] font-medium leading-tight">{tab.label}</span>
             </motion.button>
           );
         })}
