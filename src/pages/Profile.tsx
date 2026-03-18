@@ -14,35 +14,34 @@ const Profile = () => {
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [newAddress, setNewAddress] = useState('');
 
-  // Get telegramId from Telegram WebApp or use mock for development
-  const getTelegramId = (): number => {
-    if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id) {
-      return (window as any).Telegram.WebApp.initDataUnsafe.user.id;
-    }
-    // Mock for development
-    return 123456789;
-  };
-
   useEffect(() => {
     loadProfileData();
   }, []);
 
   const loadProfileData = async () => {
     setLoading(true);
-    const telegramId = getTelegramId();
+    
+    // Check if Telegram WebApp is available
+    const initData = typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData;
+    if (!initData) {
+      setLoading(false);
+      return;
+    }
     
     const [userData, ordersData] = await Promise.all([
-      apiService.getUser(telegramId),
-      apiService.getUserOrders(telegramId),
+      apiService.getUser(),
+      apiService.getUserOrders(),
     ]);
 
     setUser(userData);
     setOrders(ordersData);
     
-    // Load addresses from localStorage (or API if implemented)
-    const savedAddresses = localStorage.getItem(`addresses_${telegramId}`);
-    if (savedAddresses) {
-      setAddresses(JSON.parse(savedAddresses));
+    // Load addresses from localStorage (using user id if available)
+    if (userData) {
+      const savedAddresses = localStorage.getItem(`addresses_${userData.telegramId}`);
+      if (savedAddresses) {
+        setAddresses(JSON.parse(savedAddresses));
+      }
     }
     
     setLoading(false);
@@ -51,13 +50,14 @@ const Profile = () => {
   const handleAddAddress = async () => {
     if (!newAddress.trim()) return;
 
-    const telegramId = getTelegramId();
-    const addressData = await apiService.addAddress(telegramId, newAddress.trim());
+    const addressData = await apiService.addAddress(newAddress.trim());
     
     if (addressData) {
       const updatedAddresses = [...addresses, addressData];
       setAddresses(updatedAddresses);
-      localStorage.setItem(`addresses_${telegramId}`, JSON.stringify(updatedAddresses));
+      if (user) {
+        localStorage.setItem(`addresses_${user.telegramId}`, JSON.stringify(updatedAddresses));
+      }
       setNewAddress('');
       setShowAddressModal(false);
     } else {
@@ -68,7 +68,9 @@ const Profile = () => {
       };
       const updatedAddresses = [...addresses, newAddr];
       setAddresses(updatedAddresses);
-      localStorage.setItem(`addresses_${telegramId}`, JSON.stringify(updatedAddresses));
+      if (user) {
+        localStorage.setItem(`addresses_${user.telegramId}`, JSON.stringify(updatedAddresses));
+      }
       setNewAddress('');
       setShowAddressModal(false);
     }
@@ -77,13 +79,14 @@ const Profile = () => {
   const handleDeleteAddress = async (addressId: string) => {
     if (!confirm('Удалить адрес?')) return;
 
-    const telegramId = getTelegramId();
-    const success = await apiService.deleteAddress(telegramId, addressId);
+    const success = await apiService.deleteAddress(addressId);
     
     if (success || true) { // Always update local state
       const updatedAddresses = addresses.filter((addr) => addr.id !== addressId);
       setAddresses(updatedAddresses);
-      localStorage.setItem(`addresses_${telegramId}`, JSON.stringify(updatedAddresses));
+      if (user) {
+        localStorage.setItem(`addresses_${user.telegramId}`, JSON.stringify(updatedAddresses));
+      }
     }
   };
 

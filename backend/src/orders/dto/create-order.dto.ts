@@ -21,8 +21,8 @@ class OrderItemDto {
 }
 
 export class CreateOrderDto {
-  @IsInt()
-  telegramId: number;
+  @IsString()
+  initData: string;
 
   @IsArray()
   @ArrayMinSize(1, { message: 'Order must contain at least one item' })

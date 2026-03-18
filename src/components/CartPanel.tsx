@@ -24,15 +24,6 @@ const CartPanel = () => {
   const deliveryCost = deliveryType === "paid" ? 500 : 0;
   const finalTotal = totalPrice + deliveryCost - discount;
 
-  // Get telegramId from Telegram WebApp or use mock for development
-  const getTelegramId = (): number => {
-    if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id) {
-      return (window as any).Telegram.WebApp.initDataUnsafe.user.id;
-    }
-    // Mock for development - in production this should always come from Telegram
-    return 123456789;
-  };
-
   const handleOrder = async () => {
     // Validation
     if (items.length === 0) {
@@ -50,11 +41,16 @@ const CartPanel = () => {
       return;
     }
 
+    // Check if Telegram WebApp is available
+    const initData = typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData;
+    if (!initData) {
+      toast.error('Telegram WebApp не доступен. Откройте приложение через Telegram.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const telegramId = getTelegramId();
-
       // Prepare order items
       const orderItems = items.map(item => ({
         name: item.name,
@@ -64,9 +60,8 @@ const CartPanel = () => {
         quantity: item.quantity,
       }));
 
-      // Create order via API
+      // Create order via API (initData will be added by apiService)
       const result = await apiService.createOrder({
-        telegramId,
         items: orderItems,
         address: address.trim(),
         deliveryType,

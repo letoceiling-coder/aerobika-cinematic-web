@@ -35,9 +35,20 @@ export interface Address {
 class ApiService {
   private baseUrl = API_URL;
 
-  async getUser(telegramId: number): Promise<User | null> {
+  // Get initData from Telegram WebApp
+  private getInitData(): string | null {
+    if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData) {
+      return (window as any).Telegram.WebApp.initData;
+    }
+    return null;
+  }
+
+  async getUser(): Promise<User | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/user?telegramId=${telegramId}`);
+      const initData = this.getInitData();
+      if (!initData) return null;
+
+      const response = await fetch(`${this.baseUrl}/api/user?initData=${encodeURIComponent(initData)}`);
       if (!response.ok) return null;
       return await response.json();
     } catch (error) {
@@ -46,9 +57,12 @@ class ApiService {
     }
   }
 
-  async getUserOrders(telegramId: number): Promise<Order[]> {
+  async getUserOrders(): Promise<Order[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/orders?telegramId=${telegramId}`);
+      const initData = this.getInitData();
+      if (!initData) return [];
+
+      const response = await fetch(`${this.baseUrl}/api/orders?initData=${encodeURIComponent(initData)}`);
       if (!response.ok) return [];
       const data = await response.json();
       // Handle both { data: [...] } and direct array responses
@@ -59,12 +73,15 @@ class ApiService {
     }
   }
 
-  async addAddress(telegramId: number, address: string): Promise<Address | null> {
+  async addAddress(address: string): Promise<Address | null> {
     try {
+      const initData = this.getInitData();
+      if (!initData) return null;
+
       const response = await fetch(`${this.baseUrl}/api/address`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telegramId, address }),
+        body: JSON.stringify({ initData, address }),
       });
       if (!response.ok) return null;
       return await response.json();
@@ -74,12 +91,15 @@ class ApiService {
     }
   }
 
-  async deleteAddress(telegramId: number, addressId: string): Promise<boolean> {
+  async deleteAddress(addressId: string): Promise<boolean> {
     try {
+      const initData = this.getInitData();
+      if (!initData) return false;
+
       const response = await fetch(`${this.baseUrl}/api/address/${addressId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telegramId }),
+        body: JSON.stringify({ initData }),
       });
       return response.ok;
     } catch (error) {
@@ -89,7 +109,6 @@ class ApiService {
   }
 
   async createOrder(orderData: {
-    telegramId: number;
     items: Array<{
       name: string;
       volume: string;
@@ -101,10 +120,18 @@ class ApiService {
     deliveryType: 'free' | 'paid';
   }): Promise<{ id: number; success: boolean } | null> {
     try {
+      const initData = this.getInitData();
+      if (!initData) {
+        throw new Error('Telegram initData is required');
+      }
+
       const response = await fetch(`${this.baseUrl}/api/order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData),
+        body: JSON.stringify({
+          initData,
+          ...orderData,
+        }),
       });
 
       if (!response.ok) {

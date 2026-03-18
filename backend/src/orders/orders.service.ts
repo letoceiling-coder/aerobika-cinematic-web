@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { UsersService } from '../users/users.service';
 import { TelegramService } from '../telegram/telegram.service';
+import { TelegramValidatorService } from '../telegram/telegram-validator.service';
 
 @Injectable()
 export class OrdersService {
@@ -11,6 +12,7 @@ export class OrdersService {
     private prisma: PrismaService,
     private usersService: UsersService,
     private telegramService: TelegramService,
+    private telegramValidator: TelegramValidatorService,
   ) {}
 
   calculateDeliveryPrice(address: string): number {
@@ -28,15 +30,27 @@ export class OrdersService {
   }
 
   async create(createOrderDto: CreateOrderDto) {
-    const { telegramId, items, address, deliveryType } = createOrderDto;
+    const { initData, items, address, deliveryType } = createOrderDto;
+
+    // Validate Telegram initData and extract user
+    let telegramUser;
+    try {
+      telegramUser = this.telegramValidator.validateInitData(initData);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid Telegram initData');
+    }
 
     // Validation
     if (!items || items.length === 0) {
       throw new Error('Order must contain at least one item');
     }
 
-    // Find or create user
-    const user = await this.usersService.findOrCreate(BigInt(telegramId), {});
+    // Find or create user using validated telegramId
+    const user = await this.usersService.findOrCreate(BigInt(telegramUser.id), {
+      username: telegramUser.username,
+      firstName: telegramUser.firstName,
+      lastName: telegramUser.lastName,
+    });
 
     // Calculate prices
     // If deliveryType is 'free', delivery is free

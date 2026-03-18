@@ -1,0 +1,10 @@
+# Lovable ignore patterns
+# These files/folders will be ignored by Lovable sync
+
+backend/
+admin/
+node_modules/
+.git/
+*.log
+.env
+.env.local
