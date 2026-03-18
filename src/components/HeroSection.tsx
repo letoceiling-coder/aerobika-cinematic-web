@@ -23,15 +23,6 @@ const HeroSection = () => {
             transition={{ duration: 0.8, ease }}
             className="text-center lg:text-left"
           >
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, ease }}
-              className="inline-flex items-center gap-2 glass-card rounded-full px-4 py-2 mb-6"
-            >
-              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-              <span className="text-sm text-muted-foreground">Доставка 24/7</span>
-            </motion.div>
 
             <h1 className="text-5xl md:text-7xl font-black leading-[1.1] mb-6 tracking-tight">
               <span className="text-foreground">Закись азота</span>

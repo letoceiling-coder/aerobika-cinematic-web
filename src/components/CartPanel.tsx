@@ -218,14 +218,14 @@ const CartPanel = () => {
                             <Tag className="w-4 h-4 text-primary" />
                             <span className="text-sm font-semibold text-foreground">Промокод</span>
                           </div>
-                          <div className="flex flex-col sm:flex-row gap-2">
+                          <div className="flex gap-2">
                             <input
                               value={promoCode}
                               onChange={(e) => setPromoCode(e.target.value)}
                               placeholder="Введите промокод"
-                              className="flex-1 min-w-0 bg-secondary rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground border-none outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                              className="flex-[7] min-w-0 bg-secondary rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground border-none outline-none focus:ring-2 focus:ring-primary transition-shadow"
                             />
-                            <Button variant="goldOutline" size="default" className="whitespace-nowrap px-4 sm:px-6 shrink-0">
+                            <Button variant="gold" size="sm" className="flex-[3] shrink-0 rounded-xl text-xs font-semibold">
                               Применить
                             </Button>
                           </div>
