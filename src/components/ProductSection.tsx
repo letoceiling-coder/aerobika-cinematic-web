@@ -208,22 +208,22 @@ const ProductSection = () => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <div className="flex flex-col gap-3 pt-2">
                   <Button
                     variant="gold"
-                    size="lg"
+                    size="xl"
                     onClick={handleBuyNow}
-                    className="flex-1 h-14 text-lg font-semibold shadow-lg shadow-primary/20"
+                    className="w-full shadow-lg shadow-primary/20"
                   >
                     Купить сейчас
                   </Button>
                   <Button
                     variant="goldOutline"
-                    size="lg"
+                    size="xl"
                     onClick={handleAddToCart}
-                    className="flex-1 h-14 text-lg font-semibold flex items-center justify-center gap-2"
+                    className="w-full flex items-center justify-center gap-2"
                   >
-                    <ShoppingCart className="w-4 h-4" />
+                    <ShoppingCart className="w-5 h-5" />
                     В корзину
                   </Button>
                 </div>
