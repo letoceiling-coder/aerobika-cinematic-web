@@ -1,26 +1,72 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>N2O Delivery App</title>
-    <meta name="description" content="Lovable Generated Project">
-    <meta name="author" content="Lovable" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Spin &amp; Win — Крути колесо фортуны и выигрывай призы</title>
+    
+    <!-- Telegram Mini App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- Theme colors matching app design -->
+    <meta name="theme-color" content="#F8A575" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+    
+    <!-- SEO Meta -->
+    <meta name="description" content="Telegram Mini App с колесом фортуны. Крутите колесо, выигрывайте денежные призы от 300 до 2000 ₽. Приглашайте друзей и получайте бесплатные билеты!">
+    <meta name="author" content="Spin & Win" />
+    <meta name="robots" content="index, follow" />
 
-    <!-- TODO: Update og:title to match your application name -->
+    <!-- Open Graph -->
     
     
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e55377dc-57e8-4555-b40e-4e63b67470a1/id-preview-a7b0c45c--993a455c-15c9-49b0-ad33-1305eb8622c4.lovable.app-1773841549268.png">
+    <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/eeb6a597-d518-4bb6-95af-54820108615c/id-preview-5ad4a813--dbb5a847-9533-47d9-b7a2-13f11b5aa2c8.lovable.app-1764759288088.png">
 
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e55377dc-57e8-4555-b40e-4e63b67470a1/id-preview-a7b0c45c--993a455c-15c9-49b0-ad33-1305eb8622c4.lovable.app-1773841549268.png">
-    <meta property="og:title" content="N2O Delivery App">
-  <meta name="twitter:title" content="N2O Delivery App">
-  <meta property="og:description" content="N2O Delivery Service - Telegram Mini App">
-  <meta name="twitter:description" content="N2O Delivery Service - Telegram Mini App">
+    
+    
+    <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/eeb6a597-d518-4bb6-95af-54820108615c/id-preview-5ad4a813--dbb5a847-9533-47d9-b7a2-13f11b5aa2c8.lovable.app-1764759288088.png">
+
+    <!-- Fonts with display=swap for faster rendering -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Preload critical assets -->
+    <link rel="preload" href="/src/assets/wheel/wheel-base.png" as="image" />
+    
+    <style>
+      /* Prevent overscroll bounce on iOS */
+      html, body {
+        overscroll-behavior: none;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-x pan-y;
+      }
+      
+      /* Telegram WebView optimizations */
+      * {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      
+      /* Allow text selection in inputs */
+      input, textarea {
+        -webkit-user-select: text;
+        user-select: text;
+      }
+    </style>
+    <meta property="og:title" content="Spin &amp; Win — Крути колесо фортуны и выигрывай призы">
+  <meta name="twitter:title" content="Spin &amp; Win — Крути колесо фортуны и выигрывай призы">
+  <meta property="og:description" content="Telegram Mini App с колесом фортуны. Крутите колесо, выигрывайте денежные призы от 300 до 2000 ₽. Приглашайте друзей и получайте бесплатные билеты!">
+  <meta name="twitter:description" content="Telegram Mini App с колесом фортуны. Крутите колесо, выигрывайте денежные призы от 300 до 2000 ₽. Приглашайте друзей и получайте бесплатные билеты!">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 
   <body>
