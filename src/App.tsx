@@ -4,9 +4,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/contexts/CartContext";
+import LoadingScreen from "@/components/LoadingScreen";
 import Index from "./pages/Index.tsx";
 import Profile from "./pages/Profile.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import Checkout from "./pages/Checkout.tsx";
 import AdminLogin from "./admin/pages/Login.tsx";
 import AdminLayout from "./admin/components/AdminLayout.tsx";
 import ProtectedRoute from "./admin/components/ProtectedRoute.tsx";
@@ -22,12 +24,14 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <CartProvider>
+        <LoadingScreen>
         <Toaster />
         <Sonner />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/checkout" element={<Checkout />} />
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
@@ -89,6 +93,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        </LoadingScreen>
       </CartProvider>
     </TooltipProvider>
   </QueryClientProvider>

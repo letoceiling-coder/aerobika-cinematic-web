@@ -2,7 +2,7 @@ import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
 import { motion, useScroll, useTransform } from "framer-motion";
-import logoIcon from "@/assets/logo-icon.png";
+import logo from "@/assets/logo.png";
 
 const Header = () => {
   const { toggleCart, totalItems } = useCart();
@@ -32,11 +32,7 @@ const Header = () => {
     >
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-2.5 group">
-          <img src={logoIcon} alt="N2O" className="w-8 h-8 object-contain transition-transform duration-300 group-hover:scale-110" />
-          <div className="flex flex-col leading-none">
-            <span className="text-base font-black gold-text tracking-tight">N₂O</span>
-            <span className="text-[9px] text-muted-foreground font-medium tracking-widest uppercase">Delivery</span>
-          </div>
+          <img src={logo} alt="N2O" className="w-12 h-12 object-contain transition-transform duration-300 group-hover:scale-110" />
         </button>
 
         <nav className="hidden md:flex items-center gap-1">

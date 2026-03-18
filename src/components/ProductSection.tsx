@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldCheck, Plus, Minus, ShoppingCart } from "lucide-react";
+import { Plus, Minus, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCart } from "@/contexts/CartContext";
@@ -77,20 +77,17 @@ const ProductSection = () => {
           <div className="glass-card rounded-2xl overflow-hidden border border-border/50">
             <div className="grid md:grid-cols-2 gap-8 p-6 md:p-8">
               {/* Product Image */}
-              <div className="relative flex items-center justify-center bg-gradient-to-b from-secondary/60 to-transparent rounded-xl p-6 md:p-8 overflow-hidden">
+              <div className="relative flex items-center justify-center bg-gradient-to-b from-primary/10 via-secondary/60 to-transparent rounded-xl p-6 md:p-8 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-accent/5 rounded-xl" />
                 <motion.img
                   key={selectedVolume}
                   src={currentImage}
                   alt="Пищевая закись азота"
-                  className="w-full max-w-[180px] md:max-w-[200px] h-auto object-contain drop-shadow-lg"
+                  className="relative z-10 w-full max-w-[180px] md:max-w-[200px] h-auto object-contain drop-shadow-[0_8px_24px_rgba(212,175,55,0.2)]"
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
                 />
-                <div className="absolute top-4 right-4 flex items-center gap-1.5 glass-card rounded-full px-3 py-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-accent" />
-                  <span className="text-xs text-accent font-medium">Товар сертифицирован</span>
-                </div>
               </div>
 
               {/* Product Details */}
@@ -129,24 +126,24 @@ const ProductSection = () => {
                 {/* Purchase Type Selector */}
                 <div className="space-y-3">
                   <label className="text-sm font-medium text-foreground">Тип покупки</label>
-                  <div className="glass-card p-1 rounded-lg flex w-full sm:w-auto">
+                  <div className="glass-card p-1 rounded-lg inline-flex max-w-full">
                     <ToggleGroup
                       type="single"
                       value={purchaseType}
                       onValueChange={(value) => value && setPurchaseType(value as PurchaseType)}
-                      className="flex gap-1 w-full"
+                      className="flex gap-1"
                     >
                       <ToggleGroupItem
                         value="purchase"
                         aria-label="Покупка"
-                        className={`flex-1 sm:flex-none px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground`}
+                        className={`px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm min-w-[120px] transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground`}
                       >
                         Покупка
                       </ToggleGroupItem>
                       <ToggleGroupItem
                         value="exchange"
                         aria-label="Обмен"
-                        className={`flex-1 sm:flex-none px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground`}
+                        className={`px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm min-w-[120px] transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground`}
                       >
                         Обмен
                       </ToggleGroupItem>
@@ -192,7 +189,7 @@ const ProductSection = () => {
                       transition={{ duration: 0.3 }}
                       className="flex items-baseline gap-2 flex-wrap"
                     >
-                      <span className="text-3xl md:text-4xl font-bold gold-text inline-flex items-center gap-1 whitespace-nowrap">
+                      <span className="text-4xl md:text-5xl font-extrabold gold-text inline-flex items-center gap-1 whitespace-nowrap">
                         <span className="flex-shrink-0">{currentPrice.toLocaleString()}</span>
                         <span className="flex-shrink-0">₽</span>
                       </span>
@@ -211,12 +208,12 @@ const ProductSection = () => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <div className="flex flex-col gap-3 pt-2 md:items-start">
                   <Button
                     variant="gold"
                     size="lg"
                     onClick={handleBuyNow}
-                    className="flex-1 shadow-lg shadow-primary/20"
+                    className="w-full md:w-auto md:min-w-[240px] shadow-lg shadow-primary/20"
                   >
                     Купить сейчас
                   </Button>
@@ -224,9 +221,9 @@ const ProductSection = () => {
                     variant="goldOutline"
                     size="lg"
                     onClick={handleAddToCart}
-                    className="flex-1 flex items-center justify-center gap-2"
+                    className="w-full md:w-auto md:min-w-[240px] flex items-center justify-center gap-2"
                   >
-                    <ShoppingCart className="w-4 h-4" />
+                    <ShoppingCart className="w-5 h-5" />
                     В корзину
                   </Button>
                 </div>

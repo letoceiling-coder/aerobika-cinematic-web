@@ -15,7 +15,7 @@ const HeroSection = () => {
       <ParticlesBackground />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background pointer-events-none" />
 
-      <div className="container mx-auto px-4 relative z-10 pt-16">
+      <div className="container mx-auto px-6 relative z-10 pt-16">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -23,20 +23,15 @@ const HeroSection = () => {
             transition={{ duration: 0.8, ease }}
             className="text-center lg:text-left"
           >
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, ease }}
-              className="inline-flex items-center gap-2 glass-card rounded-full px-4 py-2 mb-6"
-            >
-              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-              <span className="text-sm text-muted-foreground">Доставка 24/7</span>
-            </motion.div>
 
-            <h1 className="text-5xl md:text-7xl font-black leading-[1.1] mb-6 tracking-tight">
+            <h1 className="text-4xl md:text-7xl font-black leading-[1.1] mb-6 tracking-tight">
               <span className="text-foreground">Закись азота</span>
               <br />
-              <span className="gold-text">N₂O</span>
+              <span className="gold-text inline-flex items-end gap-0.5 pb-2 leading-none" aria-label="N₂O">
+                <span>N</span>
+                <span className="text-[0.58em] leading-none mb-[0.08em]">2</span>
+                <span>O</span>
+              </span>
             </h1>
 
             <p className="text-xl md:text-2xl text-muted-foreground mb-4">
@@ -47,10 +42,10 @@ const HeroSection = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button variant="gold" size="xl" onClick={scrollToProducts} className="shadow-lg shadow-primary/25">
+              <Button variant="gold" size="lg" onClick={scrollToProducts} className="shadow-lg shadow-primary/25">
                 Заказать
               </Button>
-              <Button variant="goldOutline" size="xl" onClick={scrollToProducts}>
+              <Button variant="goldOutline" size="lg" onClick={scrollToProducts}>
                 Каталог
               </Button>
             </div>
