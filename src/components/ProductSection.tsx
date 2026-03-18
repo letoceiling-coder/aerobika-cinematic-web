@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldCheck, Plus, Minus, ShoppingCart } from "lucide-react";
+import { Plus, Minus, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCart } from "@/contexts/CartContext";
@@ -77,20 +77,17 @@ const ProductSection = () => {
           <div className="glass-card rounded-2xl overflow-hidden border border-border/50">
             <div className="grid md:grid-cols-2 gap-8 p-6 md:p-8">
               {/* Product Image */}
-              <div className="relative flex items-center justify-center bg-gradient-to-b from-secondary/60 to-transparent rounded-xl p-6 md:p-8 overflow-hidden">
+              <div className="relative flex items-center justify-center bg-gradient-to-b from-primary/10 via-secondary/60 to-transparent rounded-xl p-6 md:p-8 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-accent/5 rounded-xl" />
                 <motion.img
                   key={selectedVolume}
                   src={currentImage}
                   alt="Пищевая закись азота"
-                  className="w-full max-w-[180px] md:max-w-[200px] h-auto object-contain drop-shadow-lg"
+                  className="relative z-10 w-full max-w-[180px] md:max-w-[200px] h-auto object-contain drop-shadow-[0_8px_24px_rgba(212,175,55,0.2)]"
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
                 />
-                <div className="absolute top-4 right-4 flex items-center gap-1.5 glass-card rounded-full px-3 py-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-accent" />
-                  <span className="text-xs text-accent font-medium">Товар сертифицирован</span>
-                </div>
               </div>
 
               {/* Product Details */}
