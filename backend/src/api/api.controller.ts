@@ -29,7 +29,7 @@ export class ApiController {
 
     try {
       const telegramUser = this.telegramValidator.validateInitData(initData);
-      return this.usersService.findByTelegramId(BigInt(telegramUser.id));
+      return this.usersService.findByTelegramId(telegramUser.id.toString());
     } catch (error) {
       throw new UnauthorizedException('Invalid Telegram initData');
     }
@@ -43,7 +43,7 @@ export class ApiController {
 
     try {
       const telegramUser = this.telegramValidator.validateInitData(initData);
-      const user = await this.usersService.findByTelegramId(BigInt(telegramUser.id));
+      const user = await this.usersService.findByTelegramId(telegramUser.id.toString());
       if (!user) {
         return { data: [], total: 0 };
       }

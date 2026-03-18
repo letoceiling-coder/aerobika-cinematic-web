@@ -40,6 +40,8 @@ async function main() {
         description: 'Высококачественный продукт для профессионального использования',
         price5l: 3500,
         price10l: 5500,
+        exchangePrice5l: 2800,  // Exchange price (lower than buy)
+        exchangePrice10l: 4400, // Exchange price (lower than buy)
         imageUrl: '/src/assets/cylinder-5l.png',
         isActive: true,
       },

@@ -36,17 +36,15 @@ model AdminUser {
 }
 
 model Product {
-  id              Int      @id @default(autoincrement())
-  name            String
-  description     String?
-  price5l         Int      @map("price_5l")          // Buy price for 5L
-  price10l        Int      @map("price_10l")         // Buy price for 10L
-  exchangePrice5l Int?     @map("exchange_price_5l") // Exchange price for 5L (optional, lower than buy)
-  exchangePrice10l Int?    @map("exchange_price_10l") // Exchange price for 10L (optional, lower than buy)
-  imageUrl        String?  @map("image_url")
-  isActive        Boolean  @default(true) @map("is_active")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  price5l     Int      @map("price_5l")
+  price10l    Int      @map("price_10l")
+  imageUrl    String?  @map("image_url")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("products")
 }
@@ -58,8 +56,6 @@ model Order {
   totalPrice    Int      @map("total_price")
   deliveryPrice Int      @default(0) @map("delivery_price")
   address       String?
-  name          String?  // Customer name
-  phone         String?  // Customer phone/contact
   status        String   @default("new")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")

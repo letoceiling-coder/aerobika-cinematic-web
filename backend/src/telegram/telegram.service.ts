@@ -70,22 +70,43 @@ export class TelegramService implements OnModuleInit {
     const managerChatId = this.configService.get<string>('TELEGRAM_MANAGER_CHAT_ID');
     if (!managerChatId) return;
 
-    const items = Array.isArray(order.items) ? order.items : [];
-    const itemsText = items
-      .map(
-        (item: any) =>
-          `  • ${item.name} (${item.volume}) x${item.quantity} - ${item.price * item.quantity} ₽`,
-      )
-      .join('\n');
+    // Parse items (can be JSON string or array)
+    let items = [];
+    try {
+      items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+      if (!Array.isArray(items)) items = [];
+    } catch {
+      items = [];
+    }
 
-    const message = `🆕 Новый заказ #${order.id}\n\n` +
-      `👤 Пользователь: ${order.user.firstName || ''} ${order.user.lastName || ''}\n` +
-      `📱 Telegram: @${order.user.username || 'N/A'}\n\n` +
-      `📦 Товары:\n${itemsText}\n\n` +
-      `💰 Итого: ${order.totalPrice} ₽\n` +
-      `🚚 Доставка: ${order.deliveryPrice} ₽\n` +
-      `📍 Адрес: ${order.address || 'Не указан'}\n\n` +
-      `Статус: ${order.status}`;
+    // Format items according to specification
+    // Each item shows: [name] [volume] x [qty]
+    // Support multiple items
+    const itemsLines = items.map((item: any) => {
+      return `${item.name} ${item.volume} x${item.quantity}`;
+    });
+    const itemsText = itemsLines.join('\n');
+    
+    // Type: show per item (each item can have different type)
+    // Format: "Покупка" or "Обмен" or "Покупка, Обмен" if mixed
+    const types = items.map((item: any) => item.type === 'exchange' ? 'Обмен' : 'Покупка');
+    const uniqueTypes = [...new Set(types)];
+    const typeText = uniqueTypes.length === 1 ? uniqueTypes[0] : uniqueTypes.join(' / ');
+
+    // Delivery text
+    const deliveryText = order.deliveryPrice === 0 
+      ? 'По Ростову' 
+      : 'За пределами';
+
+    // Build message EXACTLY as specified
+    const message = `Новый заказ!\n` +
+      `Товар: ${itemsText}\n` +
+      `Тип: ${typeText}\n` +
+      `Доставка: ${deliveryText}\n` +
+      `Адрес: ${order.address || 'Не указан'}\n` +
+      `Имя: ${order.name || order.user.firstName || 'Не указано'}\n` +
+      `Телефон: ${order.phone || order.user.phone || 'Не указан'}\n` +
+      `Сумма: ${order.totalPrice + order.deliveryPrice} ₽`;
 
     try {
       await this.bot.telegram.sendMessage(managerChatId, message);

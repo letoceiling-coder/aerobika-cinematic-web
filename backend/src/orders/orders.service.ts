@@ -30,7 +30,7 @@ export class OrdersService {
   }
 
   async create(createOrderDto: CreateOrderDto) {
-    const { initData, items, address, deliveryType } = createOrderDto;
+    const { initData, items, address, deliveryType, name, phone } = createOrderDto;
 
     // Validate Telegram initData and extract user
     let telegramUser;
@@ -46,16 +46,20 @@ export class OrdersService {
     }
 
     // Find or create user using validated telegramId
-    const user = await this.usersService.findOrCreate(BigInt(telegramUser.id), {
+    const user = await this.usersService.findOrCreate(telegramUser.id.toString(), {
       username: telegramUser.username,
       firstName: telegramUser.firstName,
       lastName: telegramUser.lastName,
     });
 
-    // Calculate prices
-    // If deliveryType is 'free', delivery is free
-    // Otherwise, calculate based on address
-    const deliveryPrice = deliveryType === 'free' ? 0 : this.calculateDeliveryPrice(address || '');
+    // Calculate delivery price - BACKEND IS SOURCE OF TRUTH
+    // If address contains "Ростов" (case insensitive) → delivery = 0
+    // Otherwise → delivery = 500
+    // Frontend deliveryType is just a hint, backend decides based on address
+    const finalDeliveryPrice = address && address.toLowerCase().includes('ростов') 
+      ? 0 
+      : 500;
+    
     const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     // Create order
@@ -64,8 +68,10 @@ export class OrdersService {
         userId: user.id,
         items: items as any,
         totalPrice,
-        deliveryPrice,
+        deliveryPrice: finalDeliveryPrice,
         address,
+        name,
+        phone,
         status: 'new',
       },
       include: {

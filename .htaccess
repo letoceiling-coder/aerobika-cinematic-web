@@ -1,0 +1,36 @@
+# Apache configuration for Beget hosting
+# Place this in public_html/dist/ directory
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # API proxy to backend
+    RewriteCond %{REQUEST_URI} ^/api [NC]
+    RewriteRule ^api/(.*)$ http://localhost:3000/api/$1 [P,L]
+
+    # Auth endpoints proxy
+    RewriteCond %{REQUEST_URI} ^/auth [NC]
+    RewriteRule ^auth/(.*)$ http://localhost:3000/auth/$1 [P,L]
+
+    # Admin endpoints proxy
+    RewriteCond %{REQUEST_URI} ^/admin [NC]
+    RewriteRule ^admin/(.*)$ http://localhost:3000/admin/$1 [P,L]
+
+    # Other backend endpoints
+    RewriteCond %{REQUEST_URI} ^/(orders|products|users|broadcast) [NC]
+    RewriteRule ^(.*)$ http://localhost:3000/$1 [P,L]
+
+    # Frontend SPA - serve index.html for all non-file requests
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule . /index.html [L]
+</IfModule>
+
+# Enable proxy module
+<IfModule mod_proxy.c>
+    ProxyPreserveHost On
+    ProxyPassReverse /api http://localhost:3000/api
+    ProxyPassReverse /auth http://localhost:3000/auth
+    ProxyPassReverse /admin http://localhost:3000/admin
+</IfModule>

@@ -1,4 +1,5 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Direct backend connection (no proxy)
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'http://murashun.beget.tech:3000' : 'http://localhost:3000');
 
 export interface User {
   id: number;
@@ -8,6 +9,18 @@ export interface User {
   lastName: string | null;
   phone: string | null;
   createdAt: string;
+}
+
+export interface Product {
+  id: number;
+  name: string;
+  description: string | null;
+  price5l: number;
+  price10l: number;
+  exchangePrice5l: number | null;
+  exchangePrice10l: number | null;
+  imageUrl: string | null;
+  isActive: boolean;
 }
 
 export interface Order {
@@ -22,6 +35,8 @@ export interface Order {
   totalPrice: number;
   deliveryPrice: number;
   address: string | null;
+  name: string | null;
+  phone: string | null;
   status: 'new' | 'processing' | 'delivered';
   createdAt: string;
 }
@@ -108,6 +123,17 @@ class ApiService {
     }
   }
 
+  async getProducts(): Promise<Product[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/products`);
+      if (!response.ok) return [];
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+      return [];
+    }
+  }
+
   async createOrder(orderData: {
     items: Array<{
       name: string;
@@ -117,6 +143,8 @@ class ApiService {
       quantity: number;
     }>;
     address?: string;
+    name?: string;
+    phone?: string;
     deliveryType: 'free' | 'paid';
   }): Promise<{ id: number; success: boolean } | null> {
     try {

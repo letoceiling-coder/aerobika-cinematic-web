@@ -4,14 +4,17 @@ import { ArrowLeft, Send, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
+import { apiService } from "@/lib/api";
 import Header from "@/components/Header";
 import MobileNav from "@/components/MobileNav";
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { items, totalPrice, deliveryType, discount, clearCart, closeCart } = useCart();
-  const deliveryCost = deliveryType === "paid" ? 500 : 0;
-  const finalTotal = totalPrice + deliveryCost - discount;
+  // Delivery cost will be calculated by backend
+  // This is just for display
+  const estimatedDeliveryCost = deliveryType === "paid" ? 500 : 0;
+  const finalTotal = totalPrice + estimatedDeliveryCost - discount;
 
   const [address, setAddress] = useState("");
   const [name, setName] = useState("");
@@ -25,13 +28,35 @@ const Checkout = () => {
     if (!canSubmit) return;
     setIsSubmitting(true);
 
-    // Simulate order submission
-    await new Promise((r) => setTimeout(r, 1200));
+    try {
+      // Send order to backend
+      const result = await apiService.createOrder({
+        items: items.map(item => ({
+          name: item.name,
+          volume: item.volume,
+          type: item.type,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        address,
+        name,
+        phone: contact,
+        deliveryType,
+      });
 
-    clearCart();
-    closeCart();
-    setOrderConfirmed(true);
-    setIsSubmitting(false);
+      if (result && result.success) {
+        clearCart();
+        closeCart();
+        setOrderConfirmed(true);
+      } else {
+        alert('Ошибка при создании заказа. Попробуйте еще раз.');
+      }
+    } catch (error: any) {
+      console.error('Order creation failed:', error);
+      alert(error.message || 'Ошибка при создании заказа. Попробуйте еще раз.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (items.length === 0 && !orderConfirmed) {

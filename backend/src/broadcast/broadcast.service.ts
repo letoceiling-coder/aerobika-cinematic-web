@@ -37,7 +37,7 @@ export class BroadcastService {
     // Send with delay to avoid rate limits (30 messages per second limit)
     for (const user of users) {
       const success = await this.telegramService.sendMessage(
-        Number(user.telegramId),
+        typeof user.telegramId === 'string' ? Number(user.telegramId) : Number(user.telegramId),
         broadcast.message,
       );
 

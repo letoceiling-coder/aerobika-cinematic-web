@@ -28,7 +28,17 @@ export default function Login() {
       localStorage.setItem('token', response.data.access_token);
       navigate('/admin/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Неверные учетные данные');
+      console.error('Login error:', err);
+      
+      if (err.code === 'ECONNREFUSED' || err.message?.includes('Network Error')) {
+        setError('Не удалось подключиться к серверу. Убедитесь, что backend запущен на порту 3000.');
+      } else if (err.response?.status === 401) {
+        setError('Неверный email или пароль');
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError('Ошибка при входе. Проверьте подключение к серверу.');
+      }
     } finally {
       setLoading(false);
     }

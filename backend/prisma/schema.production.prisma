@@ -1,22 +1,22 @@
-// Temporary SQLite schema for testing without PostgreSQL
-// This file is used when PostgreSQL is not available
+// Production PostgreSQL schema
+// Use this for production deployment
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
   id          Int      @id @default(autoincrement())
-  telegramId  String   @unique @map("telegram_id")
-  username    String?
-  firstName   String?  @map("first_name")
-  lastName    String?  @map("last_name")
-  phone       String?
+  telegramId  BigInt   @unique @map("telegram_id")
+  username    String?  @db.VarChar(255)
+  firstName   String?  @map("first_name") @db.VarChar(255)
+  lastName    String?  @map("last_name") @db.VarChar(255)
+  phone       String?  @db.VarChar(20)
   createdAt   DateTime @default(now()) @map("created_at")
 
   orders Order[]
@@ -26,10 +26,10 @@ model User {
 
 model AdminUser {
   id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  name      String
-  role      String   @default("admin")
+  email     String   @unique @db.VarChar(255)
+  password  String   @db.VarChar(255)
+  name      String   @db.VarChar(255)
+  role      String   @default("admin") @db.VarChar(50)
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("admin_users")
@@ -37,13 +37,13 @@ model AdminUser {
 
 model Product {
   id              Int      @id @default(autoincrement())
-  name            String
-  description     String?
-  price5l         Int      @map("price_5l")          // Buy price for 5L
-  price10l        Int      @map("price_10l")         // Buy price for 10L
-  exchangePrice5l Int?     @map("exchange_price_5l") // Exchange price for 5L (optional, lower than buy)
-  exchangePrice10l Int?    @map("exchange_price_10l") // Exchange price for 10L (optional, lower than buy)
-  imageUrl        String?  @map("image_url")
+  name            String   @db.VarChar(255)
+  description     String?  @db.Text
+  price5l         Int      @map("price_5l")
+  price10l        Int      @map("price_10l")
+  exchangePrice5l Int?     @map("exchange_price_5l")
+  exchangePrice10l Int?    @map("exchange_price_10l")
+  imageUrl        String?  @map("image_url") @db.VarChar(500)
   isActive        Boolean  @default(true) @map("is_active")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
@@ -54,13 +54,13 @@ model Product {
 model Order {
   id            Int      @id @default(autoincrement())
   userId        Int      @map("user_id")
-  items         String   // JSON as String in SQLite
+  items         Json
   totalPrice    Int      @map("total_price")
   deliveryPrice Int      @default(0) @map("delivery_price")
-  address       String?
-  name          String?  // Customer name
-  phone         String?  // Customer phone/contact
-  status        String   @default("new")
+  address       String?  @db.Text
+  name          String?  @db.VarChar(255)
+  phone         String?  @db.VarChar(50)
+  status        String   @default("new") @db.VarChar(50)
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -71,7 +71,7 @@ model Order {
 
 model Broadcast {
   id        Int       @id @default(autoincrement())
-  message   String
+  message   String    @db.Text
   sent      Boolean   @default(false)
   createdAt DateTime  @default(now()) @map("created_at")
   sentAt    DateTime? @map("sent_at")

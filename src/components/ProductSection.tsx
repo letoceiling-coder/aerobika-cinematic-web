@@ -1,52 +1,111 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCart } from "@/contexts/CartContext";
+import { apiService, type Product } from "@/lib/api";
 import cylinder5l from "@/assets/cylinder-5l.png";
 import cylinder10l from "@/assets/cylinder-10l.png";
 
 type Volume = "5л" | "10л";
 type PurchaseType = "purchase" | "exchange";
 
-const PRICES: Record<Volume, number> = {
-  "5л": 3500,
-  "10л": 5500,
-};
-
 const ProductSection = () => {
   const { addItem, openCart } = useCart();
   const [selectedVolume, setSelectedVolume] = useState<Volume>("5л");
   const [purchaseType, setPurchaseType] = useState<PurchaseType>("purchase");
   const [quantity, setQuantity] = useState(1);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const currentPrice = PRICES[selectedVolume];
+  useEffect(() => {
+    loadProduct();
+  }, []);
+
+  const loadProduct = async () => {
+    setLoading(true);
+    const products = await apiService.getProducts();
+    if (products.length > 0) {
+      setProduct(products[0]); // Use first active product
+    }
+    setLoading(false);
+  };
+
+  const getCurrentPrice = (): number => {
+    if (!product) return 0;
+    
+    if (purchaseType === "exchange") {
+      // Use exchange price if available, otherwise use buy price
+      if (selectedVolume === "5л") {
+        return product.exchangePrice5l || product.price5l;
+      } else {
+        return product.exchangePrice10l || product.price10l;
+      }
+    } else {
+      // Use buy price
+      return selectedVolume === "5л" ? product.price5l : product.price10l;
+    }
+  };
+
+  const currentPrice = getCurrentPrice();
   const currentImage = selectedVolume === "5л" ? cylinder5l : cylinder10l;
 
   const handleBuyNow = () => {
+    if (!product) return;
     addItem({
       id: `${selectedVolume}-${purchaseType}-${Date.now()}`,
-      name: "Пищевая закись азота",
+      name: product.name,
       volume: selectedVolume,
       type: purchaseType,
       price: currentPrice,
-      image: currentImage,
+      image: product.imageUrl || currentImage,
     });
   };
 
   const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) {
+    if (!product) return;
+    // Add single item with quantity
+    addItem({
+      id: `${selectedVolume}-${purchaseType}-${Date.now()}`,
+      name: product.name,
+      volume: selectedVolume,
+      type: purchaseType,
+      price: currentPrice,
+      image: product.imageUrl || currentImage,
+    });
+    // Update quantity after adding
+    for (let i = 1; i < quantity; i++) {
       addItem({
         id: `${selectedVolume}-${purchaseType}-${Date.now()}-${i}`,
-        name: "Пищевая закись азота",
+        name: product.name,
         volume: selectedVolume,
         type: purchaseType,
         price: currentPrice,
-        image: currentImage,
+        image: product.imageUrl || currentImage,
       });
     }
   };
+
+  if (loading) {
+    return (
+      <section id="products" className="py-20 relative">
+        <div className="container mx-auto px-4">
+          <div className="text-center text-muted-foreground">Загрузка товаров...</div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!product) {
+    return (
+      <section id="products" className="py-20 relative">
+        <div className="container mx-auto px-4">
+          <div className="text-center text-muted-foreground">Товары не найдены</div>
+        </div>
+      </section>
+    );
+  }
 
   const incrementQuantity = () => setQuantity((prev) => prev + 1);
   const decrementQuantity = () => setQuantity((prev) => Math.max(1, prev - 1));
@@ -95,10 +154,10 @@ const ProductSection = () => {
                 {/* Title and Description */}
                 <div>
                   <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-                    Пищевая закись азота
+                    {product.name}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Высококачественный продукт для профессионального использования
+                    {product.description || 'Высококачественный продукт для профессионального использования'}
                   </p>
                 </div>
 

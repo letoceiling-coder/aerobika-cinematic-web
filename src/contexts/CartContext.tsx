@@ -27,6 +27,8 @@ interface CartContextType {
   promoCode: string;
   setPromoCode: (code: string) => void;
   discount: number;
+  applyPromoCode: (code: string) => void;
+  promoError: string;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -36,7 +38,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isOpen, setIsOpen] = useState(false);
   const [deliveryType, setDeliveryType] = useState<"free" | "paid">("free");
   const [promoCode, setPromoCode] = useState("");
-  const [discount] = useState(0);
+  const [discount, setDiscount] = useState(0);
+  const [promoError, setPromoError] = useState("");
 
   const openCart = useCallback(() => setIsOpen(true), []);
   const closeCart = useCallback(() => setIsOpen(false), []);
@@ -65,7 +68,25 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const clearCart = useCallback(() => setItems([]), []);
+  const clearCart = useCallback(() => {
+    setItems([]);
+    setPromoCode("");
+    setDiscount(0);
+    setPromoError("");
+  }, []);
+
+  const applyPromoCode = useCallback((code: string) => {
+    setPromoCode(code);
+    setPromoError("");
+    
+    // Any code = not found, discount = 0
+    if (code.trim()) {
+      setPromoError("Промокод не найден");
+      setDiscount(0);
+    } else {
+      setDiscount(0);
+    }
+  }, []);
 
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
   const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
@@ -77,7 +98,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addItem, removeItem, updateQuantity, clearCart,
         totalItems, totalPrice,
         deliveryType, setDeliveryType,
-        promoCode, setPromoCode, discount,
+        promoCode, setPromoCode, discount, applyPromoCode, promoError,
       }}
     >
       {children}

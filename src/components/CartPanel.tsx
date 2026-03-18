@@ -11,12 +11,15 @@ const CartPanel = () => {
     items, isOpen, closeCart,
     updateQuantity, removeItem,
     totalPrice, deliveryType, setDeliveryType,
-    promoCode, setPromoCode, discount,
+    promoCode, setPromoCode, discount, applyPromoCode, promoError,
   } = useCart();
   const navigate = useNavigate();
 
-  const deliveryCost = deliveryType === "paid" ? 500 : 0;
-  const finalTotal = totalPrice + deliveryCost - discount;
+  // Delivery cost will be calculated by backend based on address
+  // Frontend only shows estimated cost based on deliveryType
+  // Backend is source of truth and will override if address contains "Ростов"
+  const estimatedDeliveryCost = deliveryType === "paid" ? 500 : 0;
+  const finalTotal = totalPrice + estimatedDeliveryCost - discount;
 
   const handleCheckout = () => {
     closeCart();
@@ -146,17 +149,30 @@ const CartPanel = () => {
                         <Tag className="w-4 h-4 text-primary" />
                         <span className="text-sm font-semibold text-foreground">Промокод</span>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <input
                           value={promoCode}
                           onChange={(e) => setPromoCode(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              applyPromoCode(promoCode);
+                            }
+                          }}
                           placeholder="Введите промокод"
-                          className="flex-[7] min-w-0 bg-secondary rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground border-none outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                          className="flex-1 min-w-0 bg-secondary rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground border-none outline-none focus:ring-2 focus:ring-primary transition-shadow"
                         />
-                        <Button variant="gold" size="sm" className="flex-[3] shrink-0 rounded-xl text-xs font-semibold">
+                        <Button 
+                          variant="gold" 
+                          size="sm" 
+                          className="whitespace-nowrap px-4 sm:px-6 shrink-0 rounded-xl text-xs font-semibold"
+                          onClick={() => applyPromoCode(promoCode)}
+                        >
                           Применить
                         </Button>
                       </div>
+                      {promoError && (
+                        <p className="text-xs text-destructive mt-2">{promoError}</p>
+                      )}
                     </div>
                   </div>
                 </>
@@ -176,12 +192,12 @@ const CartPanel = () => {
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>Доставка</span>
-                    <span className={`inline-flex items-center gap-1 whitespace-nowrap ${deliveryCost === 0 ? "text-accent font-medium" : ""}`}>
-                      {deliveryCost === 0 ? (
+                    <span className={`inline-flex items-center gap-1 whitespace-nowrap ${estimatedDeliveryCost === 0 ? "text-accent font-medium" : ""}`}>
+                      {estimatedDeliveryCost === 0 ? (
                         <span>Бесплатно</span>
                       ) : (
                         <>
-                          <span className="flex-shrink-0">{deliveryCost.toLocaleString()}</span>
+                          <span className="flex-shrink-0">от {estimatedDeliveryCost.toLocaleString()}</span>
                           <span className="flex-shrink-0">₽</span>
                         </>
                       )}

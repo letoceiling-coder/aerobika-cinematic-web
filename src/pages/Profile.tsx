@@ -124,8 +124,8 @@ const Profile = () => {
   }
 
   const displayName = user
-    ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'Пользователь'
-    : 'Пользователь';
+    ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'Гость'
+    : 'Гость';
 
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">

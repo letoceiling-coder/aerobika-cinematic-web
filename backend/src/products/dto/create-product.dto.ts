@@ -14,6 +14,14 @@ export class CreateProductDto {
   @IsInt()
   price10l: number;
 
+  @IsInt()
+  @IsOptional()
+  exchangePrice5l?: number;
+
+  @IsInt()
+  @IsOptional()
+  exchangePrice10l?: number;
+
   @IsString()
   @IsOptional()
   imageUrl?: string;

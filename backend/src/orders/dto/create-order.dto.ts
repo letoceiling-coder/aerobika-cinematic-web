@@ -34,6 +34,14 @@ export class CreateOrderDto {
   @IsOptional()
   address?: string;
 
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  phone?: string;
+
   @IsEnum(['free', 'paid'])
   deliveryType: 'free' | 'paid';
 }
