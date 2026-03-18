@@ -38,10 +38,10 @@ const HeroSection = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button variant="gold" size="xl" onClick={scrollToProducts} className="shadow-lg shadow-primary/25">
+              <Button variant="gold" size="lg" onClick={scrollToProducts} className="shadow-lg shadow-primary/25">
                 Заказать
               </Button>
-              <Button variant="goldOutline" size="xl" onClick={scrollToProducts}>
+              <Button variant="goldOutline" size="lg" onClick={scrollToProducts}>
                 Каталог
               </Button>
             </div>
