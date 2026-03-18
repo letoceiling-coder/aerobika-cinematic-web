@@ -216,7 +216,7 @@ const ProductSection = () => {
                     variant="gold"
                     size="lg"
                     onClick={handleBuyNow}
-                    className="flex-1 shadow-lg shadow-primary/20"
+                    className="flex-1 h-14 text-lg font-semibold shadow-lg shadow-primary/20"
                   >
                     Купить сейчас
                   </Button>
@@ -224,7 +224,7 @@ const ProductSection = () => {
                     variant="goldOutline"
                     size="lg"
                     onClick={handleAddToCart}
-                    className="flex-1 flex items-center justify-center gap-2"
+                    className="flex-1 h-14 text-lg font-semibold flex items-center justify-center gap-2"
                   >
                     <ShoppingCart className="w-4 h-4" />
                     В корзину
