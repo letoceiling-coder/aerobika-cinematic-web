@@ -27,7 +27,11 @@ const HeroSection = () => {
             <h1 className="text-4xl md:text-7xl font-black leading-[1.1] mb-6 tracking-tight">
               <span className="text-foreground">Закись азота</span>
               <br />
-              <span className="gold-text inline-block pb-2">N₂O</span>
+              <span className="gold-text inline-flex items-end gap-0.5 pb-2 leading-none" aria-label="N₂O">
+                <span>N</span>
+                <span className="text-[0.58em] leading-none mb-[0.08em]">2</span>
+                <span>O</span>
+              </span>
             </h1>
 
             <p className="text-xl md:text-2xl text-muted-foreground mb-4">

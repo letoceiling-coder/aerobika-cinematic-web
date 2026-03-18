@@ -126,24 +126,24 @@ const ProductSection = () => {
                 {/* Purchase Type Selector */}
                 <div className="space-y-3">
                   <label className="text-sm font-medium text-foreground">Тип покупки</label>
-                  <div className="glass-card p-1 rounded-lg flex w-full sm:w-auto">
+                  <div className="glass-card p-1 rounded-lg inline-flex max-w-full">
                     <ToggleGroup
                       type="single"
                       value={purchaseType}
                       onValueChange={(value) => value && setPurchaseType(value as PurchaseType)}
-                      className="flex gap-1 w-full"
+                      className="flex gap-1"
                     >
                       <ToggleGroupItem
                         value="purchase"
                         aria-label="Покупка"
-                        className={`flex-1 sm:flex-none px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground`}
+                        className={`px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm min-w-[120px] transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground`}
                       >
                         Покупка
                       </ToggleGroupItem>
                       <ToggleGroupItem
                         value="exchange"
                         aria-label="Обмен"
-                        className={`flex-1 sm:flex-none px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground`}
+                        className={`px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm min-w-[120px] transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground`}
                       >
                         Обмен
                       </ToggleGroupItem>
@@ -208,20 +208,20 @@ const ProductSection = () => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col gap-3 pt-2">
+                <div className="flex flex-col gap-3 pt-2 md:items-start">
                   <Button
                     variant="gold"
-                    size="xl"
+                    size="lg"
                     onClick={handleBuyNow}
-                    className="w-full shadow-lg shadow-primary/20"
+                    className="w-full md:w-auto md:min-w-[240px] shadow-lg shadow-primary/20"
                   >
                     Купить сейчас
                   </Button>
                   <Button
                     variant="goldOutline"
-                    size="xl"
+                    size="lg"
                     onClick={handleAddToCart}
-                    className="w-full flex items-center justify-center gap-2"
+                    className="w-full md:w-auto md:min-w-[240px] flex items-center justify-center gap-2"
                   >
                     <ShoppingCart className="w-5 h-5" />
                     В корзину
