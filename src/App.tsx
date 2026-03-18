@@ -93,6 +93,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        </LoadingScreen>
       </CartProvider>
     </TooltipProvider>
   </QueryClientProvider>
