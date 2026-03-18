@@ -113,91 +113,53 @@ const CartPanel = () => {
                     </motion.div>
                   ))}
 
-                  <AnimatePresence mode="wait">
-                    {!showCheckout ? (
-                      <motion.div
-                        key="options"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.2 }}
-                        className="space-y-3"
-                      >
-                        {/* Delivery */}
-                        <div className="glass-card rounded-xl p-4 border border-border/30">
-                          <div className="flex items-center gap-2 mb-3">
-                            <Truck className="w-4 h-4 text-primary" />
-                            <span className="text-sm font-semibold text-foreground">Доставка</span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            {[
-                              { type: "free" as const, label: "По Ростову", sub: "Бесплатно", subClass: "text-accent" },
-                              { type: "paid" as const, label: "За пределами Ростова", sub: "от 500 ₽", subClass: "text-muted-foreground" },
-                            ].map((d) => (
-                              <motion.button
-                                key={d.type}
-                                whileTap={{ scale: 0.97 }}
-                                onClick={() => setDeliveryType(d.type)}
-                                className={`p-3 rounded-xl border-2 text-center transition-all duration-200 text-sm ${
-                                  deliveryType === d.type ? "border-primary bg-primary/10" : "border-border hover:border-muted-foreground"
-                                }`}
-                              >
-                                <div className="font-semibold text-foreground">{d.label}</div>
-                                <div className={`text-xs ${d.subClass}`}>{d.sub}</div>
-                              </motion.button>
-                            ))}
-                          </div>
-                        </div>
+                  {/* Delivery & Promo */}
+                  <div className="space-y-3">
+                    {/* Delivery */}
+                    <div className="glass-card rounded-xl p-4 border border-border/30">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Truck className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-semibold text-foreground">Доставка</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { type: "free" as const, label: "По Ростову", sub: "Бесплатно", subClass: "text-accent" },
+                          { type: "paid" as const, label: "За пределами Ростова", sub: "от 500 ₽", subClass: "text-muted-foreground" },
+                        ].map((d) => (
+                          <motion.button
+                            key={d.type}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => setDeliveryType(d.type)}
+                            className={`p-3 rounded-xl border-2 text-center transition-all duration-200 text-sm ${
+                              deliveryType === d.type ? "border-primary bg-primary/10" : "border-border hover:border-muted-foreground"
+                            }`}
+                          >
+                            <div className="font-semibold text-foreground">{d.label}</div>
+                            <div className={`text-xs ${d.subClass}`}>{d.sub}</div>
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
 
-                        {/* Promo */}
-                        <div className="glass-card rounded-xl p-4 border border-border/30">
-                          <div className="flex items-center gap-2 mb-3">
-                            <Tag className="w-4 h-4 text-primary" />
-                            <span className="text-sm font-semibold text-foreground">Промокод</span>
-                          </div>
-                          <div className="flex gap-2">
-                            <input
-                              value={promoCode}
-                              onChange={(e) => setPromoCode(e.target.value)}
-                              placeholder="Введите промокод"
-                              className="flex-[7] min-w-0 bg-secondary rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground border-none outline-none focus:ring-2 focus:ring-primary transition-shadow"
-                            />
-                            <Button variant="gold" size="sm" className="flex-[3] shrink-0 rounded-xl text-xs font-semibold">
-                              Применить
-                            </Button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="checkout"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.25, ease }}
-                        className="space-y-3"
-                      >
-                        <div className="glass-card rounded-xl p-4 border border-border/30">
-                          <label className="text-sm text-muted-foreground mb-2 block">Адрес доставки</label>
-                          <input
-                            value={address}
-                            onChange={(e) => setAddress(e.target.value)}
-                            placeholder="Улица, дом, квартира"
-                            className="w-full bg-secondary rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground border-none outline-none focus:ring-2 focus:ring-primary transition-shadow"
-                          />
-                        </div>
-                        <div className="glass-card rounded-xl p-4 border border-border/30">
-                          <label className="text-sm text-muted-foreground mb-2 block">Telegram</label>
-                          <input
-                            value={telegram}
-                            onChange={(e) => setTelegram(e.target.value)}
-                            placeholder="@username"
-                            className="w-full bg-secondary rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground border-none outline-none focus:ring-2 focus:ring-primary transition-shadow"
-                          />
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                    {/* Promo */}
+                    <div className="glass-card rounded-xl p-4 border border-border/30">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Tag className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-semibold text-foreground">Промокод</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          value={promoCode}
+                          onChange={(e) => setPromoCode(e.target.value)}
+                          placeholder="Введите промокод"
+                          className="flex-[7] min-w-0 bg-secondary rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground border-none outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                        />
+                        <Button variant="gold" size="sm" className="flex-[3] shrink-0 rounded-xl text-xs font-semibold">
+                          Применить
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 </>
               )}
             </div>
@@ -244,31 +206,14 @@ const CartPanel = () => {
                     </span>
                   </div>
                 </div>
-                {!showCheckout ? (
-                  <Button
-                    variant="gold"
-                    size="xl"
-                    className="w-full shadow-lg shadow-primary/25"
-                    onClick={() => setShowCheckout(true)}
-                  >
-                    Оформить заказ
-                  </Button>
-                ) : (
-                  <div className="space-y-2">
-                    <Button
-                      variant="gold"
-                      size="xl"
-                      className="w-full shadow-lg shadow-primary/25"
-                      onClick={handleOrder}
-                      disabled={!address || !telegram || isSubmitting || items.length === 0}
-                    >
-                      {isSubmitting ? 'Создание заказа...' : 'Подтвердить заказ'}
-                    </Button>
-                    <Button variant="ghost" size="default" className="w-full text-muted-foreground" onClick={() => setShowCheckout(false)}>
-                      Назад
-                    </Button>
-                  </div>
-                )}
+                <Button
+                  variant="gold"
+                  size="xl"
+                  className="w-full shadow-lg shadow-primary/25"
+                  onClick={handleCheckout}
+                >
+                  Оформить заказ
+                </Button>
               </div>
             )}
           </motion.div>
