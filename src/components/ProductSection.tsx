@@ -32,8 +32,6 @@ const ProductSection = () => {
     setLoading(true);
     try {
       const products = await apiService.getProducts();
-      console.log('📦 ALL PRODUCTS:', products);
-      console.log('📊 Products count:', products.length);
 
       setProducts(products);
 
@@ -61,7 +59,6 @@ const ProductSection = () => {
   const n2oProducts = products.filter((p) => categoryOf(p) === "n2o");
   const accessoryProducts = products.filter((p) => categoryOf(p) === "accessories");
   const selectedN2OProduct = n2oProducts.find((p) => p.id === selectedN2OProductId) || n2oProducts[0] || null;
-
   const getCurrentPrice = (): number => {
     if (!selectedN2OProduct) {
       return 0;
@@ -91,36 +88,6 @@ const ProductSection = () => {
 
   const currentPrice = getCurrentPrice();
   
-  // Log product state whenever it changes
-  useEffect(() => {
-    console.log('📦 PRODUCT FROM API:', selectedN2OProduct);
-    if (selectedN2OProduct) {
-      console.log('💵 Product prices:', {
-        id: selectedN2OProduct.id,
-        name: selectedN2OProduct.name,
-        price5l: selectedN2OProduct.price5l,
-        price10l: selectedN2OProduct.price10l,
-        exchangePrice5l: selectedN2OProduct.exchangePrice5l,
-        exchangePrice10l: selectedN2OProduct.exchangePrice10l,
-        isActive: selectedN2OProduct.isActive,
-      });
-      console.log('🔍 VERIFICATION: Product ID =', selectedN2OProduct.id, ', price5l =', selectedN2OProduct.price5l);
-    }
-  }, [selectedN2OProduct]);
-  
-  // Log when price calculation changes
-  useEffect(() => {
-    if (selectedN2OProduct) {
-      console.log('💲 Current displayed price:', currentPrice, {
-        selectedVolume,
-        purchaseType,
-        productId: selectedN2OProduct.id,
-        productPrice5l: selectedN2OProduct.price5l,
-        productPrice10l: selectedN2OProduct.price10l,
-      });
-      console.log('✅ PRICE VERIFICATION: Displayed =', currentPrice, ', Expected for 5л =', selectedN2OProduct.price5l);
-    }
-  }, [currentPrice, selectedVolume, purchaseType, selectedN2OProduct]);
   // Use imageUrl from API, fallback to imported images if not available
   const currentImage = selectedN2OProduct?.imageUrl || (selectedVolume === "5л" ? cylinder5l : cylinder10l) || '/placeholder.png';
 
@@ -278,7 +245,6 @@ const ProductSection = () => {
                         <motion.button
                           key={volume}
                           onClick={() => {
-                            console.log('🔄 Volume changed:', volume);
                             setSelectedVolume(volume);
                           }}
                           whileTap={{ scale: 0.97 }}
@@ -306,7 +272,6 @@ const ProductSection = () => {
                         value={purchaseType}
                         onValueChange={(value) => {
                           if (value) {
-                            console.log('🔄 Purchase type changed:', value);
                             setPurchaseType(value as PurchaseType);
                           }
                         }}
