@@ -21,7 +21,7 @@ const DeliveryInfo = () => (
       <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
         {[
           { icon: MapPin, title: "По городу", desc: "Бесплатная доставка", accent: true },
-          { icon: Truck, title: "За город", desc: "от 500–1000 ₽", accent: false },
+          { icon: Truck, title: "За город", desc: "от 500 ₽", accent: false },
           { icon: Clock, title: "Время", desc: "30–60 минут", accent: true },
         ].map((item, i) => (
           <motion.div

@@ -1,3 +1,4 @@
+import FloatingBubbles from "@/components/FloatingBubbles";
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import ProductSection from "@/components/ProductSection";
@@ -10,6 +11,7 @@ import MobileNav from "@/components/MobileNav";
 
 const Index = () => (
   <div className="min-h-screen bg-background pb-16 md:pb-0">
+    <FloatingBubbles />
     <Header />
     <HeroSection />
     <ProductSection />

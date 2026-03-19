@@ -48,17 +48,11 @@ const ProductSection = () => {
     }
   };
 
-  const categoryOf = (product: Product): ProductTab => {
-    const category = (product.category || "").toLowerCase();
-    if (category === "accessories" || product.productType === "accessory") {
-      return "accessories";
-    }
-    return "n2o";
-  };
-
-  const n2oProducts = products.filter((p) => categoryOf(p) === "n2o");
-  const accessoryProducts = products.filter((p) => categoryOf(p) === "accessories");
+  // Strict filter for accessories visibility (requested)
+  const accessoryProducts = products.filter((p) => p.category === "accessories");
+  const n2oProducts = products.filter((p) => p.category !== "accessories");
   const selectedN2OProduct = n2oProducts.find((p) => p.id === selectedN2OProductId) || n2oProducts[0] || null;
+
   const getCurrentPrice = (): number => {
     if (!selectedN2OProduct) {
       return 0;
@@ -399,26 +393,39 @@ const ProductSection = () => {
                   <p className="text-sm text-muted-foreground mb-4">{product.description || "Описание недоступно"}</p>
                   <div className="flex items-center justify-between">
                     <span className="text-xl font-bold gold-text">
-                      {isRequest ? "по запросу" : `${displayPrice.toLocaleString()} ₽`}
+                      {isRequest ? "По запросу" : `${displayPrice.toLocaleString()} ₽`}
                     </span>
-                    <Button
-                      variant="gold"
-                      size="sm"
-                      onClick={() => {
-                        if (isRequest) return;
-                        addItem({
-                          id: `accessory-${product.id}-${Date.now()}`,
-                          name: product.name || "Товар",
-                          type: "purchase",
-                          price: displayPrice,
-                          image: imageSrc,
-                          productType: product.productType || "accessory",
-                        });
-                      }}
-                      disabled={isRequest}
-                    >
-                      В корзину
-                    </Button>
+                    {isRequest ? (
+                      <Button
+                        variant="gold"
+                        size="sm"
+                        onClick={() => {
+                          const tg =
+                            import.meta.env.VITE_TELEGRAM_URL ||
+                            "https://t.me/Azot_Rostov_Bot";
+                          window.open(tg, "_blank", "noopener,noreferrer");
+                        }}
+                      >
+                        Написать
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="gold"
+                        size="sm"
+                        onClick={() => {
+                          addItem({
+                            id: `accessory-${product.id}-${Date.now()}`,
+                            name: product.name || "Товар",
+                            type: "purchase",
+                            price: displayPrice,
+                            image: imageSrc,
+                            productType: product.productType || "accessory",
+                          });
+                        }}
+                      >
+                        В корзину
+                      </Button>
+                    )}
                   </div>
                 </div>
               );

@@ -92,6 +92,15 @@ const HeroSection = () => {
               className="relative z-10 h-[200px] md:h-[250px] w-auto object-contain animate-float-gentle drop-shadow-2xl"
               loading="eager"
             />
+            <img
+              src="/girl_bubble.jpg"
+              alt=""
+              className="relative z-10 max-h-[180px] md:max-h-[240px] w-auto object-contain opacity-90 mt-4 mx-auto"
+              loading="lazy"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
           </motion.div>
         </div>
       </div>
