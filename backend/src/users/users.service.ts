@@ -5,20 +5,22 @@ import { PrismaService } from '../prisma/prisma.service';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async findOrCreate(telegramId: bigint, data: {
+  async findOrCreate(telegramId: bigint | string, data: {
     username?: string;
     firstName?: string;
     lastName?: string;
     phone?: string;
   }) {
+    // Convert bigint to string for SQLite compatibility
+    const telegramIdStr = typeof telegramId === 'bigint' ? telegramId.toString() : telegramId;
     let user = await this.prisma.user.findUnique({
-      where: { telegramId },
+      where: { telegramId: telegramIdStr as any },
     });
 
     if (!user) {
       user = await this.prisma.user.create({
         data: {
-          telegramId,
+          telegramId: telegramIdStr as any,
           username: data.username,
           firstName: data.firstName,
           lastName: data.lastName,
@@ -28,7 +30,7 @@ export class UsersService {
     } else {
       // Update user data if provided
       user = await this.prisma.user.update({
-        where: { telegramId },
+        where: { telegramId: telegramIdStr as any },
         data: {
           username: data.username ?? user.username,
           firstName: data.firstName ?? user.firstName,
@@ -53,9 +55,10 @@ export class UsersService {
     });
   }
 
-  async findByTelegramId(telegramId: bigint) {
+  async findByTelegramId(telegramId: bigint | string) {
+    const telegramIdStr = typeof telegramId === 'bigint' ? telegramId.toString() : telegramId;
     return this.prisma.user.findUnique({
-      where: { telegramId },
+      where: { telegramId: telegramIdStr as any },
     });
   }
 
@@ -77,5 +80,12 @@ export class UsersService {
       limit,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  async update(id: number, updateUserDto: { isBlocked?: boolean }) {
+    return this.prisma.user.update({
+      where: { id },
+      data: updateUserDto,
+    });
   }
 }

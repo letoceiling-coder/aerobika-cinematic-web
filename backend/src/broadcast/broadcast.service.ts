@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
+import { CreateBroadcastDto } from './dto/create-broadcast.dto';
 
 @Injectable()
 export class BroadcastService {
@@ -9,9 +10,14 @@ export class BroadcastService {
     private telegramService: TelegramService,
   ) {}
 
-  async create(message: string) {
+  async create(createBroadcastDto: CreateBroadcastDto) {
     return this.prisma.broadcast.create({
-      data: { message },
+      data: {
+        title: createBroadcastDto.title || null,
+        message: createBroadcastDto.message,
+        target: createBroadcastDto.target || 'all',
+        status: 'draft',
+      },
     });
   }
 
@@ -21,41 +27,57 @@ export class BroadcastService {
     });
   }
 
-  async sendBroadcast(broadcastId: number) {
+  async sendBroadcast(id: number) {
     const broadcast = await this.prisma.broadcast.findUnique({
-      where: { id: broadcastId },
+      where: { id },
     });
 
-    if (!broadcast || broadcast.sent) {
-      throw new Error('Broadcast not found or already sent');
+    if (!broadcast) {
+      throw new Error('Broadcast not found');
     }
 
-    const users = await this.prisma.user.findMany();
+    if (broadcast.status === 'sent') {
+      throw new Error('Broadcast already sent');
+    }
+
+    let users;
+    if (broadcast.target === 'all') {
+      // Send to all non-blocked users
+      users = await this.prisma.user.findMany({
+        where: { isBlocked: false },
+      });
+    } else {
+      // For selected users, we need to store userIds in broadcast
+      // For now, we'll send to all non-blocked users
+      // TODO: Implement selected users storage
+      users = await this.prisma.user.findMany({
+        where: { isBlocked: false },
+      });
+    }
+
     let successCount = 0;
     let failCount = 0;
 
-    // Send with delay to avoid rate limits (30 messages per second limit)
+    // Send messages with delay to avoid rate limits (30 messages per second limit)
     for (const user of users) {
       const success = await this.telegramService.sendMessage(
-        Number(user.telegramId),
+        user.telegramId,
         broadcast.message,
       );
-
       if (success) {
         successCount++;
       } else {
         failCount++;
       }
-
       // Delay 50ms between messages (20 messages per second)
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
 
-    // Mark as sent
+    // Update broadcast status
     await this.prisma.broadcast.update({
-      where: { id: broadcastId },
+      where: { id },
       data: {
-        sent: true,
+        status: 'sent',
         sentAt: new Date(),
       },
     });
