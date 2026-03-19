@@ -22,7 +22,8 @@ class OrderItemDto {
 
 export class CreateOrderDto {
   @IsString()
-  initData: string;
+  @IsOptional()
+  initData?: string;
 
   @IsArray()
   @ArrayMinSize(1, { message: 'Order must contain at least one item' })
@@ -33,6 +34,14 @@ export class CreateOrderDto {
   @IsString()
   @IsOptional()
   address?: string;
+
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  phone?: string;
 
   @IsEnum(['free', 'paid'])
   deliveryType: 'free' | 'paid';
