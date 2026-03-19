@@ -29,11 +29,7 @@ export class TelegramService implements OnModuleInit {
       // Launch bot asynchronously to not block server startup
       this.setupBot();
       this.bot.launch({
-        polling: {
-          timeout: 10,
-          limit: 100,
-          allowedUpdates: ['message', 'callback_query'],
-        } as any,
+        dropPendingUpdates: true,
       }).then(() => {
         console.log('🤖 Telegram bot started with polling');
       }).catch((error: any) => {
@@ -144,10 +140,21 @@ export class TelegramService implements OnModuleInit {
     }
 
     // Format items according to specification
-    // Format: [name] [volume] x [qty]
+    // Format: [name] [volume] x [qty] (for cylinders)
+    // Format: [name] x [qty] (for non-cylinders)
     // If multiple items, show each on new line after "Товар:"
     const itemsLines = items.map((item: any) => {
-      return `${item.name} ${item.volume} x${item.quantity}`;
+      const productType = item.productType || 'cylinder';
+      const itemName = item.name || 'Товар';
+      const quantity = item.quantity || 1;
+      
+      if (productType === 'cylinder' && item.volume) {
+        // Cylinder: show volume
+        return `${itemName} ${item.volume} x${quantity}`;
+      } else {
+        // Non-cylinder: no volume
+        return `${itemName} x${quantity}`;
+      }
     });
     
     // Build items text: single item on same line, multiple items on separate lines

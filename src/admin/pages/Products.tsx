@@ -6,10 +6,16 @@ interface Product {
   id: number;
   name: string;
   description: string;
-  price5l: number;
-  price10l: number;
+  // Legacy fields
+  price5l: number | null;
+  price10l: number | null;
   exchangePrice5l: number | null;
   exchangePrice10l: number | null;
+  // New universal fields
+  price: number | null;
+  priceType: 'fixed' | 'request';
+  category: string | null;
+  productType: 'cylinder' | 'accessory' | 'other';
   imageUrl: string;
   isActive: boolean;
 }
@@ -82,23 +88,44 @@ export default function Products() {
                 />
               )}
               <h3 className="font-bold text-lg mb-2">{product.name}</h3>
-              <p className="text-sm text-muted-foreground mb-4">{product.description}</p>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">5л</p>
-                  <p className="font-bold">{product.price5l.toLocaleString()} ₽</p>
-                  {product.exchangePrice5l && (
-                    <p className="text-xs text-accent">Обмен: {product.exchangePrice5l.toLocaleString()} ₽</p>
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">10л</p>
-                  <p className="font-bold">{product.price10l.toLocaleString()} ₽</p>
-                  {product.exchangePrice10l && (
-                    <p className="text-xs text-accent">Обмен: {product.exchangePrice10l.toLocaleString()} ₽</p>
-                  )}
-                </div>
+              <p className="text-sm text-muted-foreground mb-2">{product.description}</p>
+              <div className="text-xs text-muted-foreground mb-4 flex gap-2 flex-wrap">
+                <span className="bg-primary/20 px-2 py-1 rounded">
+                  {product.productType === 'cylinder' ? 'Баллон' : product.productType === 'accessory' ? 'Аксессуар' : 'Другое'}
+                </span>
+                {product.category && (
+                  <span className="bg-secondary px-2 py-1 rounded">{product.category}</span>
+                )}
               </div>
+              {product.productType === 'cylinder' ? (
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">5л</p>
+                    <p className="font-bold">{product.price5l?.toLocaleString() || '—'} ₽</p>
+                    {product.exchangePrice5l && (
+                      <p className="text-xs text-accent">Обмен: {product.exchangePrice5l.toLocaleString()} ₽</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">10л</p>
+                    <p className="font-bold">{product.price10l?.toLocaleString() || '—'} ₽</p>
+                    {product.exchangePrice10l && (
+                      <p className="text-xs text-accent">Обмен: {product.exchangePrice10l.toLocaleString()} ₽</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">Цена</p>
+                  <p className="font-bold text-lg">
+                    {product.priceType === 'request' 
+                      ? 'По запросу' 
+                      : product.price 
+                        ? `${product.price.toLocaleString()} ₽`
+                        : '—'}
+                  </p>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
@@ -153,10 +180,16 @@ function ProductModal({
   const [formData, setFormData] = useState(() => ({
     name: product?.name || '',
     description: product?.description || '',
-    price5l: product?.price5l || 0,
-    price10l: product?.price10l || 0,
+    // Legacy fields
+    price5l: product?.price5l ?? null,
+    price10l: product?.price10l ?? null,
     exchangePrice5l: product?.exchangePrice5l ?? null,
     exchangePrice10l: product?.exchangePrice10l ?? null,
+    // New universal fields
+    productType: product?.productType || 'cylinder',
+    category: product?.category || '',
+    price: product?.price ?? null,
+    priceType: product?.priceType || 'fixed',
     imageUrl: product?.imageUrl || '',
     isActive: product?.isActive ?? true,
   }));
@@ -167,12 +200,32 @@ function ProductModal({
       setFormData({
         name: product.name || '',
         description: product.description || '',
-        price5l: product.price5l || 0,
-        price10l: product.price10l || 0,
+        price5l: product.price5l ?? null,
+        price10l: product.price10l ?? null,
         exchangePrice5l: product.exchangePrice5l ?? null,
         exchangePrice10l: product.exchangePrice10l ?? null,
+        productType: product.productType || 'cylinder',
+        category: product.category || '',
+        price: product.price ?? null,
+        priceType: product.priceType || 'fixed',
         imageUrl: product.imageUrl || '',
         isActive: product.isActive ?? true,
+      });
+    } else {
+      // Reset to defaults for new product
+      setFormData({
+        name: '',
+        description: '',
+        price5l: null,
+        price10l: null,
+        exchangePrice5l: null,
+        exchangePrice10l: null,
+        productType: 'cylinder',
+        category: '',
+        price: null,
+        priceType: 'fixed',
+        imageUrl: '',
+        isActive: true,
       });
     }
   }, [product?.id]);
@@ -186,22 +239,41 @@ function ProductModal({
       const submitData: any = {
         name: formData.name,
         description: formData.description || null,
-        price5l: Number(formData.price5l),
-        price10l: Number(formData.price10l),
+        productType: formData.productType,
+        category: formData.category || null,
+        priceType: formData.priceType,
         imageUrl: formData.imageUrl || null,
         isActive: formData.isActive,
       };
 
-      // Handle exchange prices explicitly
-      if (formData.exchangePrice5l !== null && formData.exchangePrice5l !== undefined && formData.exchangePrice5l !== '') {
-        submitData.exchangePrice5l = Number(formData.exchangePrice5l);
-      } else {
-        submitData.exchangePrice5l = null;
-      }
+      // Handle prices based on product type (SAFE - clear unused fields)
+      if (formData.productType === 'cylinder') {
+        // Cylinder: use price5l/price10l
+        submitData.price5l = formData.price5l !== null && formData.price5l !== undefined ? Number(formData.price5l) : null;
+        submitData.price10l = formData.price10l !== null && formData.price10l !== undefined ? Number(formData.price10l) : null;
+        
+        // Exchange prices
+        if (formData.exchangePrice5l !== null && formData.exchangePrice5l !== undefined) {
+          submitData.exchangePrice5l = Number(formData.exchangePrice5l);
+        } else {
+          submitData.exchangePrice5l = null;
+        }
 
-      if (formData.exchangePrice10l !== null && formData.exchangePrice10l !== undefined && formData.exchangePrice10l !== '') {
-        submitData.exchangePrice10l = Number(formData.exchangePrice10l);
+        if (formData.exchangePrice10l !== null && formData.exchangePrice10l !== undefined) {
+          submitData.exchangePrice10l = Number(formData.exchangePrice10l);
+        } else {
+          submitData.exchangePrice10l = null;
+        }
+        
+        // Clear universal price for cylinders (SAFE)
+        submitData.price = null;
       } else {
+        // Non-cylinder: use universal price
+        submitData.price = formData.price !== null && formData.price !== undefined ? Number(formData.price) : null;
+        // Set cylinder prices to null for non-cylinders (SAFE - prevent data pollution)
+        submitData.price5l = null;
+        submitData.price10l = null;
+        submitData.exchangePrice5l = null;
         submitData.exchangePrice10l = null;
       }
 
@@ -251,7 +323,38 @@ function ProductModal({
               rows={3}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          
+          {/* Product Type */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Тип товара</label>
+            <select
+              value={formData.productType}
+              onChange={(e) => setFormData(prev => ({ ...prev, productType: e.target.value as 'cylinder' | 'accessory' | 'other' }))}
+              className="w-full bg-secondary rounded-lg px-4 py-3 text-foreground border border-border"
+            >
+              <option value="cylinder">Баллон</option>
+              <option value="accessory">Аксессуар</option>
+              <option value="other">Другое</option>
+            </select>
+          </div>
+
+          {/* Category */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Категория</label>
+            <input
+              type="text"
+              value={formData.category}
+              onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+              className="w-full bg-secondary rounded-lg px-4 py-3 text-foreground border border-border"
+              placeholder="Например: аксессуары, панч-болл"
+            />
+          </div>
+
+          {/* Conditional fields based on productType */}
+          {formData.productType === 'cylinder' ? (
+            <>
+              {/* Cylinder prices */}
+              <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">Цена 5л (₽)</label>
               <input
@@ -313,6 +416,36 @@ function ProductModal({
               />
             </div>
           </div>
+            </>
+          ) : (
+            <>
+              {/* Universal price for non-cylinders */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Тип цены</label>
+                <select
+                  value={formData.priceType}
+                  onChange={(e) => setFormData(prev => ({ ...prev, priceType: e.target.value as 'fixed' | 'request' }))}
+                  className="w-full bg-secondary rounded-lg px-4 py-3 text-foreground border border-border"
+                >
+                  <option value="fixed">Фиксированная</option>
+                  <option value="request">По запросу</option>
+                </select>
+              </div>
+              {formData.priceType === 'fixed' && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Цена (₽)</label>
+                  <input
+                    type="number"
+                    value={formData.price ?? ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value === '' ? null : Number(e.target.value) }))}
+                    className="w-full bg-secondary rounded-lg px-4 py-3 text-foreground border border-border"
+                    placeholder="Введите цену"
+                  />
+                </div>
+              )}
+            </>
+          )}
+
           <div>
             <label className="block text-sm font-medium mb-2">URL изображения</label>
             <input

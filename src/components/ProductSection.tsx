@@ -11,14 +11,17 @@ import cylinder10l from "@/assets/cylinder-10l.png";
 
 type Volume = "5л" | "10л";
 type PurchaseType = "purchase" | "exchange";
+type ProductTab = "n2o" | "accessories";
 
 const ProductSection = () => {
-  const { addItem, openCart } = useCart();
+  const { addItem } = useCart();
   const { get } = useContent();
+  const [activeTab, setActiveTab] = useState<ProductTab>("n2o");
   const [selectedVolume, setSelectedVolume] = useState<Volume>("5л");
   const [purchaseType, setPurchaseType] = useState<PurchaseType>("purchase");
   const [quantity, setQuantity] = useState(1);
-  const [product, setProduct] = useState<Product | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedN2OProductId, setSelectedN2OProductId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,23 +34,14 @@ const ProductSection = () => {
       const products = await apiService.getProducts();
       console.log('📦 ALL PRODUCTS:', products);
       console.log('📊 Products count:', products.length);
-      
-      if (products.length > 0) {
-        // Find active product first, if none - use first product
-        const activeProduct = products.find(p => p.isActive) || products[0];
-        console.log('🔍 Product selection:', {
-          totalProducts: products.length,
-          activeProducts: products.filter(p => p.isActive).length,
-          selectedProduct: activeProduct,
-          selectedProductId: activeProduct.id,
-          selectedProductPrice5l: activeProduct.price5l,
-          selectedProductPrice10l: activeProduct.price10l,
-        });
-        
-        setProduct(activeProduct);
-        console.log('✅ Selected product:', activeProduct);
-      } else {
-        console.warn('⚠️ No products found in API response');
+
+      setProducts(products);
+
+      // Prefer active N2O/cylinder product for the main tab, fallback to first product
+      const n2oCandidates = products.filter((p) => (p.category || "").toLowerCase() === "n2o" || (p.productType || "cylinder") === "cylinder");
+      const firstN2O = n2oCandidates.find((p) => p.isActive) || n2oCandidates[0] || products[0];
+      if (firstN2O) {
+        setSelectedN2OProductId(firstN2O.id);
       }
     } catch (error) {
       console.error('❌ Failed to load products:', error);
@@ -56,89 +50,123 @@ const ProductSection = () => {
     }
   };
 
+  const categoryOf = (product: Product): ProductTab => {
+    const category = (product.category || "").toLowerCase();
+    if (category === "accessories" || product.productType === "accessory") {
+      return "accessories";
+    }
+    return "n2o";
+  };
+
+  const n2oProducts = products.filter((p) => categoryOf(p) === "n2o");
+  const accessoryProducts = products.filter((p) => categoryOf(p) === "accessories");
+  const selectedN2OProduct = n2oProducts.find((p) => p.id === selectedN2OProductId) || n2oProducts[0] || null;
+
   const getCurrentPrice = (): number => {
-    if (!product) {
+    if (!selectedN2OProduct) {
       return 0;
     }
     
+    const productType = selectedN2OProduct.productType || 'cylinder';
+    
+    // For non-cylinders, use universal price
+    if (productType !== 'cylinder') {
+      if (selectedN2OProduct.priceType === 'request') {
+        return 0; // Will show "по запросу"
+      }
+      return selectedN2OProduct.price || 0;
+    }
+    
+    // For cylinders, use volume-based pricing
     if (purchaseType === "exchange") {
       return selectedVolume === "5л"
-        ? (product.exchangePrice5l ?? product.price5l)
-        : (product.exchangePrice10l ?? product.price10l);
+        ? (selectedN2OProduct.exchangePrice5l ?? selectedN2OProduct.price5l ?? 0)
+        : (selectedN2OProduct.exchangePrice10l ?? selectedN2OProduct.price10l ?? 0);
     }
     
     return selectedVolume === "5л"
-      ? product.price5l
-      : product.price10l;
+      ? (selectedN2OProduct.price5l ?? 0)
+      : (selectedN2OProduct.price10l ?? 0);
   };
 
   const currentPrice = getCurrentPrice();
   
   // Log product state whenever it changes
   useEffect(() => {
-    console.log('📦 PRODUCT FROM API:', product);
-    if (product) {
+    console.log('📦 PRODUCT FROM API:', selectedN2OProduct);
+    if (selectedN2OProduct) {
       console.log('💵 Product prices:', {
-        id: product.id,
-        name: product.name,
-        price5l: product.price5l,
-        price10l: product.price10l,
-        exchangePrice5l: product.exchangePrice5l,
-        exchangePrice10l: product.exchangePrice10l,
-        isActive: product.isActive,
+        id: selectedN2OProduct.id,
+        name: selectedN2OProduct.name,
+        price5l: selectedN2OProduct.price5l,
+        price10l: selectedN2OProduct.price10l,
+        exchangePrice5l: selectedN2OProduct.exchangePrice5l,
+        exchangePrice10l: selectedN2OProduct.exchangePrice10l,
+        isActive: selectedN2OProduct.isActive,
       });
-      console.log('🔍 VERIFICATION: Product ID =', product.id, ', price5l =', product.price5l);
+      console.log('🔍 VERIFICATION: Product ID =', selectedN2OProduct.id, ', price5l =', selectedN2OProduct.price5l);
     }
-  }, [product]);
+  }, [selectedN2OProduct]);
   
   // Log when price calculation changes
   useEffect(() => {
-    if (product) {
+    if (selectedN2OProduct) {
       console.log('💲 Current displayed price:', currentPrice, {
         selectedVolume,
         purchaseType,
-        productId: product.id,
-        productPrice5l: product.price5l,
-        productPrice10l: product.price10l,
+        productId: selectedN2OProduct.id,
+        productPrice5l: selectedN2OProduct.price5l,
+        productPrice10l: selectedN2OProduct.price10l,
       });
-      console.log('✅ PRICE VERIFICATION: Displayed =', currentPrice, ', Expected for 5л =', product.price5l);
+      console.log('✅ PRICE VERIFICATION: Displayed =', currentPrice, ', Expected for 5л =', selectedN2OProduct.price5l);
     }
-  }, [currentPrice, selectedVolume, purchaseType, product]);
+  }, [currentPrice, selectedVolume, purchaseType, selectedN2OProduct]);
   // Use imageUrl from API, fallback to imported images if not available
-  const currentImage = product?.imageUrl || (selectedVolume === "5л" ? cylinder5l : cylinder10l);
+  const currentImage = selectedN2OProduct?.imageUrl || (selectedVolume === "5л" ? cylinder5l : cylinder10l) || '/placeholder.png';
 
   const handleBuyNow = () => {
-    if (!product) return;
+    if (!selectedN2OProduct) return;
+    const productType = selectedN2OProduct.productType || 'cylinder';
+    const safeName = selectedN2OProduct.name || 'Товар';
+    const safeImage = selectedN2OProduct.imageUrl || currentImage || '/placeholder.png';
+    
     addItem({
-      id: `${selectedVolume}-${purchaseType}-${Date.now()}`,
-      name: product.name,
-      volume: selectedVolume,
+      id: `${productType}-${selectedN2OProduct.id}-${Date.now()}`,
+      name: safeName,
+      volume: productType === 'cylinder' ? selectedVolume : undefined,
       type: purchaseType,
       price: currentPrice,
-      image: product.imageUrl || currentImage,
+      image: safeImage,
+      productType: productType as 'cylinder' | 'accessory' | 'other',
     });
   };
 
   const handleAddToCart = () => {
-    if (!product) return;
+    if (!selectedN2OProduct) return;
+    const productType = selectedN2OProduct.productType || 'cylinder';
+    const safeName = selectedN2OProduct.name || 'Товар';
+    const safeImage = selectedN2OProduct.imageUrl || currentImage || '/placeholder.png';
+    
     // Add single item with quantity
     addItem({
-      id: `${selectedVolume}-${purchaseType}-${Date.now()}`,
-      name: product.name,
-      volume: selectedVolume,
+      id: `${productType}-${selectedN2OProduct.id}-${Date.now()}`,
+      name: safeName,
+      volume: productType === 'cylinder' ? selectedVolume : undefined,
       type: purchaseType,
       price: currentPrice,
-      image: product.imageUrl || currentImage,
+      image: safeImage,
+      productType: productType as 'cylinder' | 'accessory' | 'other',
     });
     // Update quantity after adding
     for (let i = 1; i < quantity; i++) {
       addItem({
-        id: `${selectedVolume}-${purchaseType}-${Date.now()}-${i}`,
-        name: product.name,
-        volume: selectedVolume,
+        id: `${productType}-${selectedN2OProduct.id}-${Date.now()}-${i}`,
+        name: safeName,
+        volume: productType === 'cylinder' ? selectedVolume : undefined,
         type: purchaseType,
         price: currentPrice,
-        image: product.imageUrl || currentImage,
+        image: safeImage,
+        productType: productType as 'cylinder' | 'accessory' | 'other',
       });
     }
   };
@@ -153,7 +181,7 @@ const ProductSection = () => {
     );
   }
 
-  if (!product) {
+  if (activeTab === "n2o" && !selectedN2OProduct) {
     return (
       <section id="products" className="py-20 relative">
         <div className="container mx-auto px-4">
@@ -179,9 +207,24 @@ const ProductSection = () => {
               <h2 className="text-3xl md:text-5xl font-bold mb-4">
                 <span className="gold-text">{get('products_title', 'Наши продукты')}</span>
               </h2>
-          <p className="text-muted-foreground text-lg">Выберите подходящий объём</p>
+          <p className="text-muted-foreground text-lg">Выберите подходящий товар</p>
+          <div className="mt-6 inline-flex rounded-lg border border-border/60 overflow-hidden">
+            <button
+              onClick={() => setActiveTab("n2o")}
+              className={`px-4 py-2 text-sm font-medium ${activeTab === "n2o" ? "gold-gradient text-primary-foreground" : "bg-secondary/50 text-foreground"}`}
+            >
+              Закись азота
+            </button>
+            <button
+              onClick={() => setActiveTab("accessories")}
+              className={`px-4 py-2 text-sm font-medium ${activeTab === "accessories" ? "gold-gradient text-primary-foreground" : "bg-secondary/50 text-foreground"}`}
+            >
+              Аксессуары
+            </button>
+          </div>
         </motion.div>
 
+        {activeTab === "n2o" && selectedN2OProduct && (
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -195,13 +238,19 @@ const ProductSection = () => {
               <div className="relative flex items-center justify-center bg-gradient-to-b from-primary/10 via-secondary/60 to-transparent rounded-xl p-6 md:p-8 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-accent/5 rounded-xl" />
                 <motion.img
-                  key={product?.imageUrl || selectedVolume}
+                  key={selectedN2OProduct?.imageUrl || selectedVolume}
                   src={currentImage}
-                  alt={product?.name || "Закись азота"}
+                  alt={selectedN2OProduct?.name || "Закись азота"}
                   className="relative z-10 w-full max-w-[180px] md:max-w-[200px] h-auto object-contain drop-shadow-[0_8px_24px_rgba(212,175,55,0.2)]"
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (target.src !== '/placeholder.png') {
+                      target.src = '/placeholder.png';
+                    }
+                  }}
                 />
               </div>
 
@@ -210,10 +259,10 @@ const ProductSection = () => {
                 {/* Title and Description */}
                 <div>
                   <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-                    {product.name}
+                    {selectedN2OProduct.name || 'Товар'}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    {product.description || 'Высококачественный продукт для профессионального использования'}
+                    {selectedN2OProduct.description || 'Высококачественный продукт для профессионального использования'}
                   </p>
                 </div>
 
@@ -223,8 +272,8 @@ const ProductSection = () => {
                   <div className="flex gap-2 sm:gap-3 flex-wrap">
                     {(["5л", "10л"] as Volume[]).map((volume) => {
                       const volPrice = volume === "5л" 
-                        ? (purchaseType === "exchange" ? (product.exchangePrice5l || product.price5l) : product.price5l)
-                        : (purchaseType === "exchange" ? (product.exchangePrice10l || product.price10l) : product.price10l);
+                        ? (purchaseType === "exchange" ? (selectedN2OProduct.exchangePrice5l || selectedN2OProduct.price5l) : selectedN2OProduct.price5l)
+                        : (purchaseType === "exchange" ? (selectedN2OProduct.exchangePrice10l || selectedN2OProduct.price10l) : selectedN2OProduct.price10l);
                       return (
                         <motion.button
                           key={volume}
@@ -248,7 +297,7 @@ const ProductSection = () => {
                 </div>
 
                 {/* Purchase Type Selector - Only show if exchange prices are available */}
-                {(product.exchangePrice5l || product.exchangePrice10l) && (
+                {(selectedN2OProduct.exchangePrice5l || selectedN2OProduct.exchangePrice10l) && (
                   <div className="space-y-3">
                     <label className="text-sm font-medium text-foreground">Тип покупки</label>
                     <div className="glass-card p-1 rounded-lg inline-flex max-w-full">
@@ -362,6 +411,60 @@ const ProductSection = () => {
             </div>
           </div>
         </motion.div>
+        )}
+
+        {activeTab === "accessories" && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {accessoryProducts.map((product) => {
+              const isRequest = product.priceType === "request";
+              const displayPrice = product.price ?? 0;
+              const imageSrc = product.imageUrl || "/placeholder.png";
+              return (
+                <div key={product.id} className="glass-card rounded-xl p-5 border border-border/50">
+                  <img
+                    src={imageSrc}
+                    alt={product.name || "Товар"}
+                    className="w-full h-44 object-contain mb-4"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (target.src !== "/placeholder.png") target.src = "/placeholder.png";
+                    }}
+                  />
+                  <h3 className="text-lg font-semibold mb-2">{product.name || "Товар"}</h3>
+                  <p className="text-sm text-muted-foreground mb-4">{product.description || "Описание недоступно"}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl font-bold gold-text">
+                      {isRequest ? "по запросу" : `${displayPrice.toLocaleString()} ₽`}
+                    </span>
+                    <Button
+                      variant="gold"
+                      size="sm"
+                      onClick={() => {
+                        if (isRequest) return;
+                        addItem({
+                          id: `accessory-${product.id}-${Date.now()}`,
+                          name: product.name || "Товар",
+                          type: "purchase",
+                          price: displayPrice,
+                          image: imageSrc,
+                          productType: product.productType || "accessory",
+                        });
+                      }}
+                      disabled={isRequest}
+                    >
+                      В корзину
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+            {accessoryProducts.length === 0 && (
+              <div className="col-span-full text-center text-muted-foreground py-10">
+                Аксессуары не найдены
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );
