@@ -1,7 +1,18 @@
-import { IsString, MinLength } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsIn } from 'class-validator';
 
 export class CreateBroadcastDto {
   @IsString()
-  @MinLength(1)
+  @IsOptional()
+  title?: string;
+
+  @IsString()
   message: string;
+
+  @IsString()
+  @IsIn(['all', 'selected'])
+  target: 'all' | 'selected';
+
+  @IsArray()
+  @IsOptional()
+  userIds?: number[];
 }

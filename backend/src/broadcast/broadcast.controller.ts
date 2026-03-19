@@ -3,14 +3,14 @@ import { BroadcastService } from './broadcast.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateBroadcastDto } from './dto/create-broadcast.dto';
 
-@Controller('broadcast')
+@Controller('api/broadcast')
 @UseGuards(JwtAuthGuard)
 export class BroadcastController {
   constructor(private readonly broadcastService: BroadcastService) {}
 
   @Post()
   create(@Body() createBroadcastDto: CreateBroadcastDto) {
-    return this.broadcastService.create(createBroadcastDto.message);
+    return this.broadcastService.create(createBroadcastDto);
   }
 
   @Get()

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, Delete, Param, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Delete, Param, UnauthorizedException, Headers } from '@nestjs/common';
 import { ProductsService } from '../products/products.service';
 import { OrdersService } from '../orders/orders.service';
 import { UsersService } from '../users/users.service';
@@ -29,36 +29,103 @@ export class ApiController {
 
     try {
       const telegramUser = this.telegramValidator.validateInitData(initData);
-      return this.usersService.findByTelegramId(BigInt(telegramUser.id));
+      return this.usersService.findByTelegramId(telegramUser.id.toString());
     } catch (error) {
       throw new UnauthorizedException('Invalid Telegram initData');
     }
   }
 
   @Get('orders')
-  async getUserOrders(@Query('initData') initData: string) {
-    if (!initData) {
+  async getUserOrders(
+    @Query('initData') initData: string,
+    @Query('phone') phone: string,
+    @Query('telegramId') telegramId: string,
+    @Headers('x-telegram-id') telegramIdHeader: string,
+  ) {
+    // Get telegramId from header or query (header has priority)
+    const finalTelegramId = telegramIdHeader || telegramId;
+    
+    console.log('📥 GET /api/orders called:', { 
+      hasInitData: !!initData, 
+      phone, 
+      telegramId: finalTelegramId,
+      telegramIdFromHeader: telegramIdHeader,
+    });
+
+    let user = null;
+
+    // Priority 1: telegramId from header or query (for MiniApp)
+    if (finalTelegramId) {
+      console.log('🔍 Searching by telegramId:', finalTelegramId);
+      user = await this.usersService.findByTelegramId(finalTelegramId);
+      if (user) {
+        console.log('✅ User found by telegramId:', user.id);
+      } else {
+        console.log('⚠️ User not found by telegramId:', finalTelegramId);
+      }
+    }
+    // Priority 2: initData (legacy MiniApp support)
+    else if (initData) {
+      try {
+        const telegramUser = this.telegramValidator.validateInitData(initData);
+        console.log('✅ Telegram user validated for orders:', telegramUser.id);
+        user = await this.usersService.findByTelegramId(telegramUser.id.toString());
+        if (user) {
+          console.log('✅ User found by initData:', user.id);
+        } else {
+          console.log('⚠️ User not found for telegramId:', telegramUser.id);
+        }
+      } catch (error: any) {
+        console.error('❌ Error validating initData:', error.message);
+        // Don't throw, try phone fallback
+      }
+    }
+    // Priority 3: phone (for WEB)
+    if (!user && phone) {
+      console.log('🔍 Searching by phone:', phone);
+      user = await this.prisma.user.findFirst({
+        where: { phone },
+      });
+      if (user) {
+        console.log('✅ User found by phone:', user.id);
+      } else {
+        console.log('⚠️ User not found by phone:', phone);
+      }
+    }
+
+    if (!user) {
+      console.log('⚠️ No user found, returning empty orders');
       return { data: [], total: 0 };
     }
 
-    try {
-      const telegramUser = this.telegramValidator.validateInitData(initData);
-      const user = await this.usersService.findByTelegramId(BigInt(telegramUser.id));
-      if (!user) {
-        return { data: [], total: 0 };
-      }
-      const orders = await this.prisma.order.findMany({
-        where: { userId: user.id },
-        orderBy: { createdAt: 'desc' },
-      });
-      return { data: orders, total: orders.length };
-    } catch (error) {
-      throw new UnauthorizedException('Invalid Telegram initData');
-    }
+    console.log('👤 User found:', user.id);
+    
+    const orders = await this.prisma.order.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+    });
+    
+    console.log('📦 Found orders:', orders.length);
+    
+    // Parse items from JSON string to array for each order
+    const ordersWithParsedItems = orders.map(order => ({
+      ...order,
+      items: typeof order.items === 'string' ? JSON.parse(order.items) : order.items,
+    }));
+    
+    return { data: ordersWithParsedItems, total: ordersWithParsedItems.length };
   }
 
   @Post('order')
   createOrder(@Body() createOrderDto: CreateOrderDto) {
+    console.log('📥 POST /api/order received:', {
+      hasInitData: !!createOrderDto.initData,
+      initDataLength: createOrderDto.initData?.length,
+      itemsCount: createOrderDto.items?.length,
+      address: createOrderDto.address,
+      name: (createOrderDto as any).name,
+      phone: (createOrderDto as any).phone,
+    });
     return this.ordersService.create(createOrderDto);
   }
 

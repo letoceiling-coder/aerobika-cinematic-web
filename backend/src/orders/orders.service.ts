@@ -30,42 +30,105 @@ export class OrdersService {
   }
 
   async create(createOrderDto: CreateOrderDto) {
-    const { initData, items, address, deliveryType } = createOrderDto;
+    const { initData, items, address, deliveryType, name, phone } = createOrderDto;
 
-    // Validate Telegram initData and extract user
-    let telegramUser;
-    try {
-      telegramUser = this.telegramValidator.validateInitData(initData);
-    } catch (error) {
-      throw new UnauthorizedException('Invalid Telegram initData');
-    }
+    console.log('📦 Creating order:', { 
+      itemsCount: items?.length, 
+      address, 
+      name, 
+      phone,
+      hasInitData: !!initData,
+      initDataLength: initData?.length 
+    });
 
     // Validation
     if (!items || items.length === 0) {
+      console.error('❌ Order validation failed: no items');
       throw new Error('Order must contain at least one item');
     }
 
-    // Find or create user using validated telegramId
-    const user = await this.usersService.findOrCreate(BigInt(telegramUser.id), {
-      username: telegramUser.username,
-      firstName: telegramUser.firstName,
-      lastName: telegramUser.lastName,
-    });
+    // Handle user: Telegram Mini App or Web version
+    let user;
+    if (initData) {
+      // Telegram Mini App: validate and use Telegram user
+      try {
+        const telegramUser = this.telegramValidator.validateInitData(initData);
+        console.log('✅ Telegram user validated:', telegramUser.id);
+        user = await this.usersService.findOrCreate(telegramUser.id.toString(), {
+          username: telegramUser.username,
+          firstName: telegramUser.firstName,
+          lastName: telegramUser.lastName,
+          phone: phone || (telegramUser as any).phone,
+        });
+        console.log('✅ User found/created from Telegram:', user.id);
+      } catch (error: any) {
+        console.error('❌ Invalid Telegram initData:', error.message);
+        throw new UnauthorizedException('Invalid Telegram initData');
+      }
+    } else {
+      // Web version: create/find user by phone or create anonymous user
+      if (phone) {
+        // Try to find user by phone
+        const existingUser = await this.prisma.user.findFirst({
+          where: { phone },
+        });
+        if (existingUser) {
+          user = existingUser;
+          console.log('✅ User found by phone:', user.id);
+        } else {
+          // Create new user with phone
+          user = await this.prisma.user.create({
+            data: {
+              telegramId: `web_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              phone,
+              firstName: name || null,
+            },
+          });
+          console.log('✅ New user created for web order:', user.id);
+        }
+      } else {
+        // Anonymous web order - create temporary user
+        user = await this.prisma.user.create({
+          data: {
+            telegramId: `web_anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            firstName: name || 'Анонимный',
+            phone: phone || null,
+          },
+        });
+        console.log('✅ Anonymous user created for web order:', user.id);
+      }
+    }
 
-    // Calculate prices
-    // If deliveryType is 'free', delivery is free
-    // Otherwise, calculate based on address
-    const deliveryPrice = deliveryType === 'free' ? 0 : this.calculateDeliveryPrice(address || '');
+    // Calculate delivery price - BACKEND IS SOURCE OF TRUTH
+    // Priority: 1) deliveryType from frontend, 2) address check
+    // If deliveryType is "free" OR address contains "Ростов" (case insensitive) → delivery = 0
+    // Otherwise → delivery = 500
+    let finalDeliveryPrice = 500;
+    
+    if (deliveryType === 'free') {
+      finalDeliveryPrice = 0;
+      console.log('✅ Free delivery based on deliveryType');
+    } else if (address && address.toLowerCase().includes('ростов')) {
+      finalDeliveryPrice = 0;
+      console.log('✅ Free delivery based on address (contains "Ростов")');
+    } else {
+      finalDeliveryPrice = 500;
+      console.log('💰 Paid delivery: 500 ₽');
+    }
+    
     const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    console.log('💰 Order totals:', { totalPrice, deliveryPrice: finalDeliveryPrice });
 
     // Create order
     const order = await this.prisma.order.create({
       data: {
         userId: user.id,
-        items: items as any,
+        items: JSON.stringify(items),
         totalPrice,
-        deliveryPrice,
+        deliveryPrice: finalDeliveryPrice,
         address,
+        name,
+        phone,
         status: 'new',
       },
       include: {
@@ -73,8 +136,16 @@ export class OrdersService {
       },
     });
 
+    console.log('✅ Order created:', order.id);
+
     // Send notification to manager
-    await this.telegramService.sendOrderNotification(order);
+    try {
+      await this.telegramService.sendOrderNotification(order);
+      console.log('✅ Order notification sent');
+    } catch (error: any) {
+      console.error('⚠️ Failed to send notification:', error.message);
+      // Don't fail order creation if notification fails
+    }
 
     return order;
   }

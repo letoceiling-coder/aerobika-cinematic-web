@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
+import { apiService, type Product } from "@/lib/api";
 import cylinder5l from "@/assets/cylinder-5l.png";
 import cylinder10l from "@/assets/cylinder-10l.png";
 
@@ -11,44 +12,68 @@ interface ProductModalProps {
   onClose: () => void;
 }
 
-const volumes = [
-  { id: "5l", label: "5 л", price: 3500, image: cylinder5l },
-  { id: "10l", label: "10 л", price: 5500, image: cylinder10l },
-];
-
-const purchaseTypes = [
-  { id: "purchase" as const, label: "Покупка" },
-  { id: "exchange" as const, label: "Обмен" },
-];
+type Volume = "5л" | "10л";
+type PurchaseType = "purchase" | "exchange";
 
 const ease = [0.4, 0, 0.2, 1] as const;
 
 const ProductModal = ({ isOpen, onClose }: ProductModalProps) => {
-  const [selectedVolume, setSelectedVolume] = useState(volumes[0]);
-  const [purchaseType, setPurchaseType] = useState<"purchase" | "exchange">("purchase");
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedVolume, setSelectedVolume] = useState<Volume>("5л");
+  const [purchaseType, setPurchaseType] = useState<PurchaseType>("purchase");
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
 
-  const exchangeDiscount = purchaseType === "exchange" ? 500 : 0;
-  const currentPrice = selectedVolume.price - exchangeDiscount;
+  useEffect(() => {
+    if (isOpen) {
+      loadProduct();
+    }
+  }, [isOpen]);
+
+  const loadProduct = async () => {
+    setLoading(true);
+    try {
+      const products = await apiService.getProducts();
+      if (products.length > 0) {
+        const activeProduct = products.find(p => p.isActive) || products[0];
+        setProduct(activeProduct);
+      }
+    } catch (error) {
+      console.error('Failed to load product:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCurrentPrice = (): number => {
+    if (!product) return 0;
+    
+    if (purchaseType === "exchange") {
+      if (selectedVolume === "5л") {
+        return product.exchangePrice5l || product.price5l;
+      } else {
+        return product.exchangePrice10l || product.price10l;
+      }
+    } else {
+      return selectedVolume === "5л" ? product.price5l : product.price10l;
+    }
+  };
+
+  const currentPrice = getCurrentPrice();
+  const currentImage = product?.imageUrl || (selectedVolume === "5л" ? cylinder5l : cylinder10l);
 
   const handleBuy = () => {
-    addItem({
-      id: `${selectedVolume.id}-${purchaseType}`,
-      name: `N₂O Баллон ${selectedVolume.label}`,
-      volume: selectedVolume.label,
-      type: purchaseType,
-      price: currentPrice,
-      image: selectedVolume.image,
-    });
-    for (let i = 1; i < quantity; i++) {
+    if (!product) return;
+    
+    for (let i = 0; i < quantity; i++) {
       addItem({
-        id: `${selectedVolume.id}-${purchaseType}`,
-        name: `N₂O Баллон ${selectedVolume.label}`,
-        volume: selectedVolume.label,
+        id: `${selectedVolume}-${purchaseType}-${Date.now()}-${i}`,
+        name: product.name,
+        volume: selectedVolume,
         type: purchaseType,
         price: currentPrice,
-        image: selectedVolume.image,
+        image: currentImage,
       });
     }
     onClose();
@@ -86,65 +111,86 @@ const ProductModal = ({ isOpen, onClose }: ProductModalProps) => {
                 </motion.button>
               </div>
 
-              {/* Image */}
-              <div className="flex justify-center p-8 bg-gradient-to-b from-secondary/30 to-transparent">
-                <motion.img
-                  key={selectedVolume.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, ease }}
-                  src={selectedVolume.image}
-                  alt="N2O"
-                  className="w-44 h-60 object-contain drop-shadow-lg"
-                />
-              </div>
-
-              <div className="p-6 space-y-6">
-                {/* Volume Selector */}
-                <div>
-                  <label className="text-sm text-muted-foreground mb-3 block">Объём</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {volumes.map((v) => (
-                      <motion.button
-                        key={v.id}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => setSelectedVolume(v)}
-                        className={`p-4 rounded-xl border-2 transition-all duration-200 text-center ${
-                          selectedVolume.id === v.id
-                            ? "border-primary gold-glow bg-primary/10"
-                            : "border-border hover:border-muted-foreground"
-                        }`}
-                      >
-                        <div className="font-bold text-foreground">{v.label}</div>
-                        <div className="text-sm text-muted-foreground">{v.price.toLocaleString()} ₽</div>
-                      </motion.button>
-                    ))}
+              {loading ? (
+                <div className="p-8 text-center text-muted-foreground">Загрузка...</div>
+              ) : !product ? (
+                <div className="p-8 text-center text-muted-foreground">Товар не найден</div>
+              ) : (
+                <>
+                  {/* Image */}
+                  <div className="flex justify-center p-8 bg-gradient-to-b from-secondary/30 to-transparent">
+                    <motion.img
+                      key={selectedVolume}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3, ease }}
+                      src={currentImage}
+                      alt={product.name}
+                      className="w-44 h-60 object-contain drop-shadow-lg"
+                    />
                   </div>
-                </div>
 
-                {/* Purchase Type */}
-                <div>
-                  <label className="text-sm text-muted-foreground mb-3 block">Тип</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {purchaseTypes.map((t) => (
-                      <motion.button
-                        key={t.id}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => setPurchaseType(t.id)}
-                        className={`p-3 rounded-xl border-2 transition-all duration-200 text-center ${
-                          purchaseType === t.id
-                            ? "border-primary gold-glow bg-primary/10"
-                            : "border-border hover:border-muted-foreground"
-                        }`}
-                      >
-                        <div className="font-semibold text-foreground text-sm">{t.label}</div>
-                        {t.id === "exchange" && (
-                          <div className="text-xs text-accent mt-1">-500 ₽</div>
-                        )}
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
+                  <div className="p-6 space-y-6">
+                    {/* Volume Selector */}
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-3 block">Объём</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        {(["5л", "10л"] as Volume[]).map((vol) => {
+                          const volPrice = vol === "5л" 
+                            ? (purchaseType === "exchange" ? (product.exchangePrice5l || product.price5l) : product.price5l)
+                            : (purchaseType === "exchange" ? (product.exchangePrice10l || product.price10l) : product.price10l);
+                          return (
+                            <motion.button
+                              key={vol}
+                              whileTap={{ scale: 0.97 }}
+                              onClick={() => setSelectedVolume(vol)}
+                              className={`p-4 rounded-xl border-2 transition-all duration-200 text-center ${
+                                selectedVolume === vol
+                                  ? "border-primary gold-glow bg-primary/10"
+                                  : "border-border hover:border-muted-foreground"
+                              }`}
+                            >
+                              <div className="font-bold text-foreground">{vol}</div>
+                              <div className="text-sm text-muted-foreground">{volPrice.toLocaleString()} ₽</div>
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Purchase Type */}
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-3 block">Тип</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        {([
+                          { id: "purchase" as const, label: "Покупка" },
+                          { id: "exchange" as const, label: "Обмен" }
+                        ]).map((t) => (
+                          <motion.button
+                            key={t.id}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => setPurchaseType(t.id)}
+                            className={`p-3 rounded-xl border-2 transition-all duration-200 text-center ${
+                              purchaseType === t.id
+                                ? "border-primary gold-glow bg-primary/10"
+                                : "border-border hover:border-muted-foreground"
+                            }`}
+                          >
+                            <div className="font-semibold text-foreground text-sm">{t.label}</div>
+                            {t.id === "exchange" && product.exchangePrice5l && (
+                              <div className="text-xs text-accent mt-1">
+                                {selectedVolume === "5л" 
+                                  ? `-${(product.price5l - product.exchangePrice5l).toLocaleString()} ₽`
+                                  : product.exchangePrice10l 
+                                    ? `-${(product.price10l - product.exchangePrice10l).toLocaleString()} ₽`
+                                    : ""
+                                }
+                              </div>
+                            )}
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
 
                 {/* Quantity */}
                 <div>
@@ -169,12 +215,15 @@ const ProductModal = ({ isOpen, onClose }: ProductModalProps) => {
                 </div>
               </div>
 
-              {/* Sticky CTA */}
-              <div className="sticky bottom-0 p-4 border-t border-border/50 bg-card">
-                <Button variant="gold" size="xl" className="w-full shadow-lg shadow-primary/25" onClick={handleBuy}>
-                  Купить сейчас · {(currentPrice * quantity).toLocaleString()} ₽
-                </Button>
-              </div>
+                    {/* Sticky CTA */}
+                    <div className="sticky bottom-0 p-4 border-t border-border/50 bg-card">
+                      <Button variant="gold" size="xl" className="w-full shadow-lg shadow-primary/25" onClick={handleBuy}>
+                        Купить сейчас · {(currentPrice * quantity).toLocaleString()} ₽
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </motion.div>
         </>

@@ -1,23 +1,25 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Temporary SQLite schema for testing without PostgreSQL
+// This file is used when PostgreSQL is not available
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
   id          Int      @id @default(autoincrement())
-  telegramId  BigInt   @unique @map("telegram_id")
-  username    String?  @db.VarChar(255)
-  firstName   String?  @map("first_name") @db.VarChar(255)
-  lastName    String?  @map("last_name") @db.VarChar(255)
-  phone       String?  @db.VarChar(20)
+  telegramId  String   @unique @map("telegram_id")
+  username    String?
+  firstName   String?  @map("first_name")
+  lastName    String?  @map("last_name")
+  phone       String?
+  isBlocked   Boolean  @default(false) @map("is_blocked")
   createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   orders Order[]
 
@@ -26,25 +28,33 @@ model User {
 
 model AdminUser {
   id        Int      @id @default(autoincrement())
-  email     String   @unique @db.VarChar(255)
-  password  String   @db.VarChar(255)
-  name      String   @db.VarChar(255)
-  role      String   @default("admin") @db.VarChar(50)
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("admin")
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("admin_users")
 }
 
 model Product {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(255)
-  description String?  @db.Text
-  price5l     Int      @map("price_5l")
-  price10l    Int      @map("price_10l")
-  imageUrl    String?  @map("image_url") @db.VarChar(500)
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id              Int      @id @default(autoincrement())
+  name            String
+  description     String?
+  // Legacy fields for cylinders (kept for backward compatibility)
+  price5l         Int?     @map("price_5l")          // Buy price for 5L (optional for non-cylinders)
+  price10l        Int?     @map("price_10l")         // Buy price for 10L (optional for non-cylinders)
+  exchangePrice5l Int?     @map("exchange_price_5l") // Exchange price for 5L (optional)
+  exchangePrice10l Int?    @map("exchange_price_10l") // Exchange price for 10L (optional)
+  // New universal fields
+  price           Int?     // Universal price (for non-cylinders)
+  priceType       String   @default("fixed") @map("price_type") // "fixed" | "request"
+  category        String?  // Category name (e.g., "accessories", "punch-ball")
+  productType     String   @default("cylinder") @map("product_type") // "cylinder" | "accessory" | "other"
+  imageUrl        String?  @map("image_url")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   @@map("products")
 }
@@ -52,11 +62,13 @@ model Product {
 model Order {
   id            Int      @id @default(autoincrement())
   userId        Int      @map("user_id")
-  items         Json
+  items         String   // JSON as String in SQLite
   totalPrice    Int      @map("total_price")
   deliveryPrice Int      @default(0) @map("delivery_price")
-  address       String?  @db.Text
-  status        String   @default("new") @db.VarChar(50)
+  address       String?
+  name          String?  // Customer name
+  phone         String?  // Customer phone/contact
+  status        String   @default("new")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -66,11 +78,49 @@ model Order {
 }
 
 model Broadcast {
-  id        Int      @id @default(autoincrement())
-  message   String   @db.Text
-  sent      Boolean  @default(false)
-  createdAt DateTime @default(now()) @map("created_at")
+  id        Int       @id @default(autoincrement())
+  title     String?
+  message   String
+  target    String   @default("all") // "all" | "selected"
+  status    String   @default("draft") // "draft" | "sent"
+  createdAt DateTime  @default(now()) @map("created_at")
   sentAt    DateTime? @map("sent_at")
 
   @@map("broadcasts")
+}
+
+model BotSetting {
+  id                  Int      @id @default(autoincrement())
+  botName              String   @map("bot_name")
+  shortDescription     String?  @map("short_description")
+  fullDescription      String?  @map("full_description")
+  welcomeMessage       String?  @map("welcome_message")
+  managerChatId        String?  @map("manager_chat_id")
+  telegramUsername     String?  @map("telegram_username")
+  phone                String?
+  orderTemplate        String?  @map("order_template")
+  city                 String?  @default("Ростов-на-Дону")
+  deliveryPriceOutside Int?     @default(500) @map("delivery_price_outside")
+  deliveryPriceInside  Int?     @default(0) @map("delivery_price_inside")
+  currency             String?  @default("₽")
+  minOrderAmount       Int?     @default(0) @map("min_order_amount")
+  isBotEnabled         Boolean  @default(true) @map("is_bot_enabled")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@map("bot_settings")
+}
+
+model ContentBlock {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  type      String   @default("text") // "text" | "textarea" | "image"
+  page      String?  // "home" | "global" | etc.
+  block     String?  // "hero" | "footer" | "products" | "delivery"
+  label     String?  // Human-readable label for UI
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("content_blocks")
 }

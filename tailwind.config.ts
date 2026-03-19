@@ -61,9 +61,9 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
         gold: {
-          DEFAULT: "#D4AF37",
-          light: "#F5D77A",
-          dark: "#B8962E",
+          DEFAULT: "#7C6FFF",
+          light: "#A78BFA",
+          dark: "#6D5FFF",
         },
         success: "#22C55E",
       },
