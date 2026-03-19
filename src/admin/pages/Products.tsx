@@ -8,6 +8,8 @@ interface Product {
   description: string;
   price5l: number;
   price10l: number;
+  exchangePrice5l: number | null;
+  exchangePrice10l: number | null;
   imageUrl: string;
   isActive: boolean;
 }
@@ -85,10 +87,16 @@ export default function Products() {
                 <div>
                   <p className="text-sm text-muted-foreground">5л</p>
                   <p className="font-bold">{product.price5l.toLocaleString()} ₽</p>
+                  {product.exchangePrice5l && (
+                    <p className="text-xs text-accent">Обмен: {product.exchangePrice5l.toLocaleString()} ₽</p>
+                  )}
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">10л</p>
                   <p className="font-bold">{product.price10l.toLocaleString()} ₽</p>
+                  {product.exchangePrice10l && (
+                    <p className="text-xs text-accent">Обмен: {product.exchangePrice10l.toLocaleString()} ₽</p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -141,26 +149,79 @@ function ProductModal({
   onClose: () => void;
   onSave: () => void;
 }) {
-  const [formData, setFormData] = useState({
+  // Initialize formData only once when product changes
+  const [formData, setFormData] = useState(() => ({
     name: product?.name || '',
     description: product?.description || '',
     price5l: product?.price5l || 0,
     price10l: product?.price10l || 0,
+    exchangePrice5l: product?.exchangePrice5l ?? null,
+    exchangePrice10l: product?.exchangePrice10l ?? null,
     imageUrl: product?.imageUrl || '',
     isActive: product?.isActive ?? true,
-  });
+  }));
+
+  // Only update when product ID changes
+  useEffect(() => {
+    if (product) {
+      setFormData({
+        name: product.name || '',
+        description: product.description || '',
+        price5l: product.price5l || 0,
+        price10l: product.price10l || 0,
+        exchangePrice5l: product.exchangePrice5l ?? null,
+        exchangePrice10l: product.exchangePrice10l ?? null,
+        imageUrl: product.imageUrl || '',
+        isActive: product.isActive ?? true,
+      });
+    }
+  }, [product?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🚀 SUBMIT TRIGGERED');
+    
     try {
-      if (product) {
-        await api.patch(`/products/${product.id}`, formData);
+      // Build submit data explicitly
+      const submitData: any = {
+        name: formData.name,
+        description: formData.description || null,
+        price5l: Number(formData.price5l),
+        price10l: Number(formData.price10l),
+        imageUrl: formData.imageUrl || null,
+        isActive: formData.isActive,
+      };
+
+      // Handle exchange prices explicitly
+      if (formData.exchangePrice5l !== null && formData.exchangePrice5l !== undefined && formData.exchangePrice5l !== '') {
+        submitData.exchangePrice5l = Number(formData.exchangePrice5l);
       } else {
-        await api.post('/products', formData);
+        submitData.exchangePrice5l = null;
+      }
+
+      if (formData.exchangePrice10l !== null && formData.exchangePrice10l !== undefined && formData.exchangePrice10l !== '') {
+        submitData.exchangePrice10l = Number(formData.exchangePrice10l);
+      } else {
+        submitData.exchangePrice10l = null;
+      }
+
+      console.log('📤 SubmitData:', JSON.stringify(submitData, null, 2));
+      console.log('🔍 exchangePrice5l:', submitData.exchangePrice5l, typeof submitData.exchangePrice5l);
+      console.log('🔍 exchangePrice10l:', submitData.exchangePrice10l, typeof submitData.exchangePrice10l);
+
+      if (product) {
+        console.log('📡 Sending PATCH request:', `/products/${product.id}`);
+        const response = await api.patch(`/products/${product.id}`, submitData);
+        console.log('✅ PATCH response:', response.data);
+      } else {
+        console.log('📡 Sending POST request:', '/products');
+        const response = await api.post('/products', submitData);
+        console.log('✅ POST response:', response.data);
       }
       onSave();
-    } catch (error) {
-      console.error('Failed to save product:', error);
+    } catch (error: any) {
+      console.error('❌ Failed to save product:', error);
+      console.error('Error response:', error.response?.data);
     }
   };
 
@@ -176,7 +237,7 @@ function ProductModal({
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               className="w-full bg-secondary rounded-lg px-4 py-3 text-foreground border border-border"
               required
             />
@@ -185,7 +246,7 @@ function ProductModal({
             <label className="block text-sm font-medium mb-2">Описание</label>
             <textarea
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               className="w-full bg-secondary rounded-lg px-4 py-3 text-foreground border border-border"
               rows={3}
             />
@@ -196,7 +257,7 @@ function ProductModal({
               <input
                 type="number"
                 value={formData.price5l}
-                onChange={(e) => setFormData({ ...formData, price5l: parseInt(e.target.value) })}
+                onChange={(e) => setFormData(prev => ({ ...prev, price5l: Number(e.target.value) }))}
                 className="w-full bg-secondary rounded-lg px-4 py-3 text-foreground border border-border"
                 required
               />
@@ -206,9 +267,49 @@ function ProductModal({
               <input
                 type="number"
                 value={formData.price10l}
-                onChange={(e) => setFormData({ ...formData, price10l: parseInt(e.target.value) })}
+                onChange={(e) => setFormData(prev => ({ ...prev, price10l: Number(e.target.value) }))}
                 className="w-full bg-secondary rounded-lg px-4 py-3 text-foreground border border-border"
                 required
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Цена обмена 5л (₽)</label>
+              <input
+                type="number"
+                value={formData.exchangePrice5l ?? ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const numVal = val === '' ? null : (val ? Number(val) : null);
+                  console.log('🔍 exchangePrice5l input:', val, '→', numVal);
+                  setFormData(prev => {
+                    const newData = { ...prev, exchangePrice5l: numVal };
+                    console.log('🔍 exchangePrice5l state updated:', newData.exchangePrice5l);
+                    return newData;
+                  });
+                }}
+                className="w-full bg-secondary rounded-lg px-4 py-3 text-foreground border border-border"
+                placeholder="Необязательно"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Цена обмена 10л (₽)</label>
+              <input
+                type="number"
+                value={formData.exchangePrice10l ?? ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const numVal = val === '' ? null : (val ? Number(val) : null);
+                  console.log('🔍 exchangePrice10l input:', val, '→', numVal);
+                  setFormData(prev => {
+                    const newData = { ...prev, exchangePrice10l: numVal };
+                    console.log('🔍 exchangePrice10l state updated:', newData.exchangePrice10l);
+                    return newData;
+                  });
+                }}
+                className="w-full bg-secondary rounded-lg px-4 py-3 text-foreground border border-border"
+                placeholder="Необязательно"
               />
             </div>
           </div>
@@ -217,7 +318,7 @@ function ProductModal({
             <input
               type="text"
               value={formData.imageUrl}
-              onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+              onChange={(e) => setFormData(prev => ({ ...prev, imageUrl: e.target.value }))}
               className="w-full bg-secondary rounded-lg px-4 py-3 text-foreground border border-border"
             />
           </div>
@@ -225,7 +326,7 @@ function ProductModal({
             <input
               type="checkbox"
               checked={formData.isActive}
-              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+              onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
               className="w-4 h-4"
             />
             <label className="text-sm">Активен</label>

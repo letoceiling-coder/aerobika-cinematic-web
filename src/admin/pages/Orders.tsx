@@ -6,12 +6,15 @@ interface Order {
   totalPrice: number;
   deliveryPrice: number;
   address: string;
+  name?: string;
+  phone?: string;
   status: string;
   createdAt: string;
   user: {
     firstName: string;
     lastName: string;
     username: string;
+    phone?: string;
   };
 }
 
@@ -94,13 +97,21 @@ export default function Orders() {
                   <p className="text-sm text-muted-foreground">
                     {order.user.firstName} {order.user.lastName} (@{order.user.username})
                   </p>
+                  {(order.phone || order.user.phone) && (
+                    <p className="text-sm text-muted-foreground">
+                      📞 {order.phone || order.user.phone}
+                    </p>
+                  )}
                   <p className="text-sm text-muted-foreground">{order.address}</p>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="font-bold">{order.totalPrice.toLocaleString()} ₽</p>
+                    <p className="font-bold">{(order.totalPrice + order.deliveryPrice).toLocaleString()} ₽</p>
                     <p className="text-sm text-muted-foreground">
-                      Доставка: {order.deliveryPrice} ₽
+                      Товары: {order.totalPrice.toLocaleString()} ₽
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Доставка: {order.deliveryPrice === 0 ? 'Бесплатно' : `${order.deliveryPrice.toLocaleString()} ₽`}
                     </p>
                   </div>
                   <select

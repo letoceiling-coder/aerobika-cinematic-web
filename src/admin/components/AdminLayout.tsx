@@ -1,12 +1,14 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
-  LayoutDashboard, 
-  ShoppingCart, 
-  Package, 
-  Users, 
-  MessageSquare,
-  LogOut
-} from 'lucide-react';
+      LayoutDashboard, 
+      ShoppingCart, 
+      Package, 
+      Users, 
+      MessageSquare,
+      Settings,
+      FileText,
+      LogOut
+    } from 'lucide-react';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -22,6 +24,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { path: '/admin/products', icon: Package, label: 'Товары' },
     { path: '/admin/users', icon: Users, label: 'Пользователи' },
     { path: '/admin/broadcast', icon: MessageSquare, label: 'Рассылка' },
+    { path: '/admin/bot-settings', icon: Settings, label: 'Настройки бота' },
+    { path: '/admin/content', icon: FileText, label: 'Контент' },
   ];
 
   const handleLogout = () => {

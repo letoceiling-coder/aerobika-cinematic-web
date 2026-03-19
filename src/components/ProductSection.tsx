@@ -1,52 +1,167 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCart } from "@/contexts/CartContext";
+import { apiService, type Product } from "@/lib/api";
+import { useContent } from "@/hooks/useContent";
 import cylinder5l from "@/assets/cylinder-5l.png";
 import cylinder10l from "@/assets/cylinder-10l.png";
 
 type Volume = "5л" | "10л";
 type PurchaseType = "purchase" | "exchange";
 
-const PRICES: Record<Volume, number> = {
-  "5л": 3500,
-  "10л": 5500,
-};
-
 const ProductSection = () => {
   const { addItem, openCart } = useCart();
+  const { get } = useContent();
   const [selectedVolume, setSelectedVolume] = useState<Volume>("5л");
   const [purchaseType, setPurchaseType] = useState<PurchaseType>("purchase");
   const [quantity, setQuantity] = useState(1);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const currentPrice = PRICES[selectedVolume];
-  const currentImage = selectedVolume === "5л" ? cylinder5l : cylinder10l;
+  useEffect(() => {
+    loadProduct();
+  }, []);
+
+  const loadProduct = async () => {
+    setLoading(true);
+    try {
+      const products = await apiService.getProducts();
+      console.log('📦 ALL PRODUCTS:', products);
+      console.log('📊 Products count:', products.length);
+      
+      if (products.length > 0) {
+        // Find active product first, if none - use first product
+        const activeProduct = products.find(p => p.isActive) || products[0];
+        console.log('🔍 Product selection:', {
+          totalProducts: products.length,
+          activeProducts: products.filter(p => p.isActive).length,
+          selectedProduct: activeProduct,
+          selectedProductId: activeProduct.id,
+          selectedProductPrice5l: activeProduct.price5l,
+          selectedProductPrice10l: activeProduct.price10l,
+        });
+        
+        setProduct(activeProduct);
+        console.log('✅ Selected product:', activeProduct);
+      } else {
+        console.warn('⚠️ No products found in API response');
+      }
+    } catch (error) {
+      console.error('❌ Failed to load products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCurrentPrice = (): number => {
+    if (!product) {
+      return 0;
+    }
+    
+    if (purchaseType === "exchange") {
+      return selectedVolume === "5л"
+        ? (product.exchangePrice5l ?? product.price5l)
+        : (product.exchangePrice10l ?? product.price10l);
+    }
+    
+    return selectedVolume === "5л"
+      ? product.price5l
+      : product.price10l;
+  };
+
+  const currentPrice = getCurrentPrice();
+  
+  // Log product state whenever it changes
+  useEffect(() => {
+    console.log('📦 PRODUCT FROM API:', product);
+    if (product) {
+      console.log('💵 Product prices:', {
+        id: product.id,
+        name: product.name,
+        price5l: product.price5l,
+        price10l: product.price10l,
+        exchangePrice5l: product.exchangePrice5l,
+        exchangePrice10l: product.exchangePrice10l,
+        isActive: product.isActive,
+      });
+      console.log('🔍 VERIFICATION: Product ID =', product.id, ', price5l =', product.price5l);
+    }
+  }, [product]);
+  
+  // Log when price calculation changes
+  useEffect(() => {
+    if (product) {
+      console.log('💲 Current displayed price:', currentPrice, {
+        selectedVolume,
+        purchaseType,
+        productId: product.id,
+        productPrice5l: product.price5l,
+        productPrice10l: product.price10l,
+      });
+      console.log('✅ PRICE VERIFICATION: Displayed =', currentPrice, ', Expected for 5л =', product.price5l);
+    }
+  }, [currentPrice, selectedVolume, purchaseType, product]);
+  // Use imageUrl from API, fallback to imported images if not available
+  const currentImage = product?.imageUrl || (selectedVolume === "5л" ? cylinder5l : cylinder10l);
 
   const handleBuyNow = () => {
+    if (!product) return;
     addItem({
       id: `${selectedVolume}-${purchaseType}-${Date.now()}`,
-      name: "Пищевая закись азота",
+      name: product.name,
       volume: selectedVolume,
       type: purchaseType,
       price: currentPrice,
-      image: currentImage,
+      image: product.imageUrl || currentImage,
     });
   };
 
   const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) {
+    if (!product) return;
+    // Add single item with quantity
+    addItem({
+      id: `${selectedVolume}-${purchaseType}-${Date.now()}`,
+      name: product.name,
+      volume: selectedVolume,
+      type: purchaseType,
+      price: currentPrice,
+      image: product.imageUrl || currentImage,
+    });
+    // Update quantity after adding
+    for (let i = 1; i < quantity; i++) {
       addItem({
         id: `${selectedVolume}-${purchaseType}-${Date.now()}-${i}`,
-        name: "Пищевая закись азота",
+        name: product.name,
         volume: selectedVolume,
         type: purchaseType,
         price: currentPrice,
-        image: currentImage,
+        image: product.imageUrl || currentImage,
       });
     }
   };
+
+  if (loading) {
+    return (
+      <section id="products" className="py-20 relative">
+        <div className="container mx-auto px-4">
+          <div className="text-center text-muted-foreground">Загрузка товаров...</div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!product) {
+    return (
+      <section id="products" className="py-20 relative">
+        <div className="container mx-auto px-4">
+          <div className="text-center text-muted-foreground">Товары не найдены</div>
+        </div>
+      </section>
+    );
+  }
 
   const incrementQuantity = () => setQuantity((prev) => prev + 1);
   const decrementQuantity = () => setQuantity((prev) => Math.max(1, prev - 1));
@@ -61,9 +176,9 @@ const ProductSection = () => {
           transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
           className="text-center mb-14"
         >
-          <h2 className="text-3xl md:text-5xl font-bold mb-4">
-            <span className="gold-text">Наши продукты</span>
-          </h2>
+              <h2 className="text-3xl md:text-5xl font-bold mb-4">
+                <span className="gold-text">{get('products_title', 'Наши продукты')}</span>
+              </h2>
           <p className="text-muted-foreground text-lg">Выберите подходящий объём</p>
         </motion.div>
 
@@ -80,9 +195,9 @@ const ProductSection = () => {
               <div className="relative flex items-center justify-center bg-gradient-to-b from-primary/10 via-secondary/60 to-transparent rounded-xl p-6 md:p-8 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-accent/5 rounded-xl" />
                 <motion.img
-                  key={selectedVolume}
+                  key={product?.imageUrl || selectedVolume}
                   src={currentImage}
-                  alt="Пищевая закись азота"
+                  alt={product?.name || "Закись азота"}
                   className="relative z-10 w-full max-w-[180px] md:max-w-[200px] h-auto object-contain drop-shadow-[0_8px_24px_rgba(212,175,55,0.2)]"
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -95,10 +210,10 @@ const ProductSection = () => {
                 {/* Title and Description */}
                 <div>
                   <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-                    Пищевая закись азота
+                    {product.name}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Высококачественный продукт для профессионального использования
+                    {product.description || 'Высококачественный продукт для профессионального использования'}
                   </p>
                 </div>
 
@@ -106,50 +221,66 @@ const ProductSection = () => {
                 <div className="space-y-3">
                   <label className="text-sm font-medium text-foreground">Объём</label>
                   <div className="flex gap-2 sm:gap-3 flex-wrap">
-                    {(["5л", "10л"] as Volume[]).map((volume) => (
-                      <motion.button
-                        key={volume}
-                        onClick={() => setSelectedVolume(volume)}
-                        whileTap={{ scale: 0.97 }}
-                        className={`px-4 py-2 sm:px-6 sm:py-3 rounded-full font-semibold text-sm transition-all duration-300 min-w-[80px] ${
-                          selectedVolume === volume
-                            ? "gold-gradient text-primary-foreground gold-glow border-2 border-primary"
-                            : "bg-secondary/80 text-muted-foreground border-2 border-transparent hover:bg-secondary"
-                        }`}
-                      >
-                        {volume}
-                      </motion.button>
-                    ))}
+                    {(["5л", "10л"] as Volume[]).map((volume) => {
+                      const volPrice = volume === "5л" 
+                        ? (purchaseType === "exchange" ? (product.exchangePrice5l || product.price5l) : product.price5l)
+                        : (purchaseType === "exchange" ? (product.exchangePrice10l || product.price10l) : product.price10l);
+                      return (
+                        <motion.button
+                          key={volume}
+                          onClick={() => {
+                            console.log('🔄 Volume changed:', volume);
+                            setSelectedVolume(volume);
+                          }}
+                          whileTap={{ scale: 0.97 }}
+                          className={`px-4 py-2 sm:px-6 sm:py-3 rounded-full font-semibold text-sm transition-all duration-300 min-w-[80px] ${
+                            selectedVolume === volume
+                              ? "gold-gradient text-primary-foreground gold-glow border-2 border-primary"
+                              : "bg-secondary/80 text-muted-foreground border-2 border-transparent hover:bg-secondary"
+                          }`}
+                        >
+                          {volume}
+                          <span className="block text-xs mt-1 opacity-75">{volPrice.toLocaleString()} ₽</span>
+                        </motion.button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Purchase Type Selector */}
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-foreground">Тип покупки</label>
-                  <div className="glass-card p-1 rounded-lg inline-flex max-w-full">
-                    <ToggleGroup
-                      type="single"
-                      value={purchaseType}
-                      onValueChange={(value) => value && setPurchaseType(value as PurchaseType)}
-                      className="flex gap-1"
-                    >
-                      <ToggleGroupItem
-                        value="purchase"
-                        aria-label="Покупка"
-                        className={`px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm min-w-[120px] transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground`}
+                {/* Purchase Type Selector - Only show if exchange prices are available */}
+                {(product.exchangePrice5l || product.exchangePrice10l) && (
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-foreground">Тип покупки</label>
+                    <div className="glass-card p-1 rounded-lg inline-flex max-w-full">
+                      <ToggleGroup
+                        type="single"
+                        value={purchaseType}
+                        onValueChange={(value) => {
+                          if (value) {
+                            console.log('🔄 Purchase type changed:', value);
+                            setPurchaseType(value as PurchaseType);
+                          }
+                        }}
+                        className="flex gap-1"
                       >
-                        Покупка
-                      </ToggleGroupItem>
-                      <ToggleGroupItem
-                        value="exchange"
-                        aria-label="Обмен"
-                        className={`px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm min-w-[120px] transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground`}
-                      >
-                        Обмен
-                      </ToggleGroupItem>
-                    </ToggleGroup>
+                        <ToggleGroupItem
+                          value="purchase"
+                          aria-label="Покупка"
+                          className={`px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm min-w-[120px] transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground`}
+                        >
+                          Покупка
+                        </ToggleGroupItem>
+                        <ToggleGroupItem
+                          value="exchange"
+                          aria-label="Обмен"
+                          className={`px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm min-w-[120px] transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground`}
+                        >
+                          Обмен
+                        </ToggleGroupItem>
+                      </ToggleGroup>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Quantity Stepper */}
                 <div className="space-y-3">

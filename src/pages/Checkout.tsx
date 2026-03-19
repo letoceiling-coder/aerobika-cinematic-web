@@ -4,14 +4,17 @@ import { ArrowLeft, Send, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
+import { apiService } from "@/lib/api";
 import Header from "@/components/Header";
 import MobileNav from "@/components/MobileNav";
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { items, totalPrice, deliveryType, discount, clearCart, closeCart } = useCart();
-  const deliveryCost = deliveryType === "paid" ? 500 : 0;
-  const finalTotal = totalPrice + deliveryCost - discount;
+  // Delivery cost will be calculated by backend
+  // This is just for display
+  const estimatedDeliveryCost = deliveryType === "paid" ? 500 : 0;
+  const finalTotal = totalPrice + estimatedDeliveryCost - discount;
 
   const [address, setAddress] = useState("");
   const [name, setName] = useState("");
@@ -22,16 +25,129 @@ const Checkout = () => {
   const canSubmit = address.trim() && name.trim() && contact.trim() && items.length > 0;
 
   const handleSubmit = async () => {
-    if (!canSubmit) return;
+    console.log('🔘 handleSubmit called');
+    console.log('📋 canSubmit:', canSubmit);
+    console.log('📦 items:', items);
+    console.log('📍 address:', address);
+    console.log('👤 name:', name);
+    console.log('📞 contact:', contact);
+    
+    if (!canSubmit) {
+      console.warn('⚠️ Cannot submit: validation failed');
+      return;
+    }
+    
+    console.log('✅ Validation passed, starting submission...');
     setIsSubmitting(true);
 
-    // Simulate order submission
-    await new Promise((r) => setTimeout(r, 1200));
+    try {
+      console.log('📤 Calling apiService.createOrder...');
+      
+      // Send order to backend
+      const result = await apiService.createOrder({
+        items: items.map(item => ({
+          name: item.name,
+          volume: item.volume,
+          type: item.type,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        address,
+        name,
+        phone: contact,
+        deliveryType,
+      });
 
-    clearCart();
-    closeCart();
-    setOrderConfirmed(true);
-    setIsSubmitting(false);
+      console.log('📥 createOrder result:', result);
+
+      if (result && result.success) {
+        console.log('✅ Order created successfully, clearing cart...');
+        
+        const initData = typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData;
+        
+        // Save address to localStorage if provided
+        if (address && address.trim()) {
+          if (initData) {
+            // Mini App: save address with user telegramId
+            const user = await apiService.getUser();
+            if (user) {
+              const savedAddresses = JSON.parse(localStorage.getItem(`addresses_${user.telegramId}`) || '[]');
+              const newAddr = {
+                id: Date.now().toString(),
+                address: address.trim(),
+              };
+              // Check if address already exists
+              if (!savedAddresses.find((a: any) => a.address === address.trim())) {
+                savedAddresses.push(newAddr);
+                localStorage.setItem(`addresses_${user.telegramId}`, JSON.stringify(savedAddresses));
+                console.log('💾 Address saved to localStorage for Mini App');
+              }
+            }
+          } else {
+            // Web version: save address
+            const savedAddresses = JSON.parse(localStorage.getItem('addresses_web') || '[]');
+            const newAddr = {
+              id: Date.now().toString(),
+              address: address.trim(),
+            };
+            // Check if address already exists
+            if (!savedAddresses.find((a: any) => a.address === address.trim())) {
+              savedAddresses.push(newAddr);
+              localStorage.setItem('addresses_web', JSON.stringify(savedAddresses));
+              console.log('💾 Address saved to localStorage for web version');
+            }
+          }
+        }
+        
+        // Save order to localStorage for web version
+        if (!initData) {
+          // Web version: save phone for future order loading
+          if (contact) {
+            localStorage.setItem('user_phone', contact);
+            console.log('💾 Phone saved to localStorage:', contact);
+          }
+          
+          // Web version: save order to localStorage
+          const savedOrders = JSON.parse(localStorage.getItem('orders_web') || '[]');
+          savedOrders.push({
+            id: result.id,
+            items: items.map(item => ({
+              name: item.name,
+              volume: item.volume,
+              type: item.type,
+              price: item.price,
+              quantity: item.quantity,
+            })),
+            totalPrice: totalPrice,
+            deliveryPrice: estimatedDeliveryCost,
+            address,
+            name,
+            phone: contact,
+            status: 'new',
+            createdAt: new Date().toISOString(),
+          });
+          localStorage.setItem('orders_web', JSON.stringify(savedOrders));
+          console.log('💾 Order saved to localStorage for web version');
+        }
+        
+        clearCart();
+        closeCart();
+        setOrderConfirmed(true);
+      } else {
+        console.error('❌ Order creation returned invalid result:', result);
+        alert('Ошибка при создании заказа. Попробуйте еще раз.');
+      }
+    } catch (error: any) {
+      console.error('❌ Order creation failed:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      });
+      alert(error.message || 'Ошибка при создании заказа. Попробуйте еще раз.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (items.length === 0 && !orderConfirmed) {
@@ -117,7 +233,11 @@ const Checkout = () => {
                 variant="gold"
                 size="xl"
                 className="w-full shadow-lg shadow-primary/25"
-                onClick={handleSubmit}
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log('🖱️ Button clicked!');
+                  handleSubmit();
+                }}
                 disabled={!canSubmit || isSubmitting}
               >
                 {isSubmitting ? "Отправка..." : "Подтвердить заказ"}
