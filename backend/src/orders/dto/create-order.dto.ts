@@ -1,4 +1,4 @@
-import { IsArray, IsInt, IsString, IsOptional, IsEnum, ValidateNested, ArrayMinSize, Min } from 'class-validator';
+import { IsArray, IsInt, IsString, IsOptional, IsEnum, ValidateNested, ArrayMinSize, Min, Matches } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class OrderItemDto {
@@ -41,7 +41,13 @@ export class CreateOrderDto {
 
   @IsString()
   @IsOptional()
+  @Matches(/^(\+7|8)\d{10}$/)
   phone?: string;
+
+  @IsString()
+  @IsOptional()
+  @Matches(/^@[a-zA-Z0-9_]{5,}$/)
+  telegramUsername?: string;
 
   @IsEnum(['free', 'paid'])
   deliveryType: 'free' | 'paid';

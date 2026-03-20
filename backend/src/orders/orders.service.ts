@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -30,7 +30,7 @@ export class OrdersService {
   }
 
   async create(createOrderDto: CreateOrderDto) {
-    const { initData, items, address, deliveryType, name, phone } = createOrderDto;
+    const { initData, items, address, deliveryType, name, phone, telegramUsername } = createOrderDto;
 
     console.log('📦 Creating order:', { 
       itemsCount: items?.length, 
@@ -46,6 +46,11 @@ export class OrdersService {
       console.error('❌ Order validation failed: no items');
       throw new Error('Order must contain at least one item');
     }
+    if (!phone && !telegramUsername) {
+      throw new BadRequestException('Укажите телефон или Telegram');
+    }
+
+    const gift = 'Упаковка шариков + 2 панчбола — бесплатно';
 
     // Handle user: Telegram Mini App or Web version
     let user;
@@ -140,14 +145,21 @@ export class OrdersService {
 
     // Send notification to manager
     try {
-      await this.telegramService.sendOrderNotification(order);
+      await this.telegramService.sendOrderNotification({
+        ...order,
+        gift,
+        telegramUsername: telegramUsername || null,
+      });
       console.log('✅ Order notification sent');
     } catch (error: any) {
       console.error('⚠️ Failed to send notification:', error.message);
       // Don't fail order creation if notification fails
     }
 
-    return order;
+    return {
+      ...order,
+      gift,
+    };
   }
 
   async findAll(page: number = 1, limit: number = 20, status?: string) {

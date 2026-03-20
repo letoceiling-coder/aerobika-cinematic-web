@@ -200,8 +200,13 @@ export class TelegramService implements OnModuleInit {
     message += `Доставка: ${deliveryText}\n`;
     message += `Адрес: ${order.address || 'Не указан'}\n`;
     message += `Имя: ${userName || 'Не указано'}\n`;
-    message += `Телефон: ${userPhone || 'Не указан'}\n`;
+    message += `Telegram: ${order.telegramUsername || 'не указан'}\n`;
+    message += `Телефон: ${order.phone || userPhone || 'не указан'}\n`;
     message += `Сумма: ${totalSum} ₽`;
+
+    const gift = order.gift || 'Упаковка шариков + 2 панчбола';
+    message += `\n🎁 Подарок: ${gift}`;
+    console.log(`📨 Telegram order message:\n${message}`);
 
     try {
       await this.bot.telegram.sendMessage(managerChatId, message);
