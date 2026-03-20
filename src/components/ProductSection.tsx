@@ -99,7 +99,7 @@ const ProductSection = () => {
       price: currentPrice,
       image: safeImage,
       productType: productType as 'cylinder' | 'accessory' | 'other',
-    });
+    }, quantity);
   };
 
   const handleAddToCart = () => {
@@ -108,7 +108,6 @@ const ProductSection = () => {
     const safeName = selectedN2OProduct.name || 'Товар';
     const safeImage = selectedN2OProduct.imageUrl || currentImage || '/placeholder.png';
     
-    // Add single item with quantity
     addItem({
       id: `${productType}-${selectedN2OProduct.id}-${Date.now()}`,
       name: safeName,
@@ -117,19 +116,7 @@ const ProductSection = () => {
       price: currentPrice,
       image: safeImage,
       productType: productType as 'cylinder' | 'accessory' | 'other',
-    });
-    // Update quantity after adding
-    for (let i = 1; i < quantity; i++) {
-      addItem({
-        id: `${productType}-${selectedN2OProduct.id}-${Date.now()}-${i}`,
-        name: safeName,
-        volume: productType === 'cylinder' ? selectedVolume : undefined,
-        type: purchaseType,
-        price: currentPrice,
-        image: safeImage,
-        productType: productType as 'cylinder' | 'accessory' | 'other',
-      });
-    }
+    }, quantity);
   };
 
   if (loading) {
@@ -172,13 +159,21 @@ const ProductSection = () => {
           <div className="mt-6 inline-flex rounded-lg border border-border/60 overflow-hidden">
             <button
               onClick={() => setActiveTab("n2o")}
-              className={`px-4 py-2 text-sm font-medium ${activeTab === "n2o" ? "gold-gradient text-primary-foreground" : "bg-secondary/50 text-foreground"}`}
+              className={`flex-1 h-12 text-base font-medium px-4 ${
+                activeTab === "n2o"
+                  ? "bg-purple-600 text-white"
+                  : "bg-transparent text-gray-400 border-0"
+              }`}
             >
               Закись азота
             </button>
             <button
               onClick={() => setActiveTab("accessories")}
-              className={`px-4 py-2 text-sm font-medium ${activeTab === "accessories" ? "gold-gradient text-primary-foreground" : "bg-secondary/50 text-foreground"}`}
+              className={`flex-1 h-12 text-base font-medium px-4 ${
+                activeTab === "accessories"
+                  ? "bg-purple-600 text-white"
+                  : "bg-transparent text-gray-400 border-0"
+              }`}
             >
               Аксессуары
             </button>

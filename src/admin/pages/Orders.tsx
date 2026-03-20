@@ -29,7 +29,7 @@ export default function Orders() {
 
   const fetchOrders = async () => {
     try {
-      const response = await api.get(`/orders?page=${page}&limit=20`);
+      const response = await api.get(`/orders/admin?page=${page}&limit=20`);
       setOrders(response.data.data);
     } catch (error) {
       console.error('Failed to fetch orders:', error);

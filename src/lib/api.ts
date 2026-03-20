@@ -15,10 +15,16 @@ export interface Product {
   id: number;
   name: string;
   description: string | null;
-  price5l: number;
-  price10l: number;
+  // Legacy fields (for cylinders)
+  price5l: number | null;
+  price10l: number | null;
   exchangePrice5l: number | null;
   exchangePrice10l: number | null;
+  // New universal fields
+  price: number | null;
+  priceType: 'fixed' | 'request';
+  category: string | null;
+  productType: 'cylinder' | 'accessory' | 'other';
   imageUrl: string | null;
   isActive: boolean;
 }
@@ -191,6 +197,7 @@ class ApiService {
     address?: string;
     name?: string;
     phone?: string;
+    telegramUsername?: string;
     deliveryType: 'free' | 'paid';
   }): Promise<{ id: number; success: boolean } | null> {
     try {

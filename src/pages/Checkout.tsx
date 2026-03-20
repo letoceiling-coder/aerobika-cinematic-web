@@ -18,11 +18,50 @@ const Checkout = () => {
 
   const [address, setAddress] = useState("");
   const [name, setName] = useState("");
-  const [contact, setContact] = useState("");
+  const [telegram, setTelegram] = useState("");
+  const [phone, setPhone] = useState("");
+  const [telegramError, setTelegramError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderConfirmed, setOrderConfirmed] = useState(false);
 
-  const canSubmit = address.trim() && name.trim() && contact.trim() && items.length > 0;
+  const telegramRegex = /^@[a-zA-Z0-9_]{5,}$/;
+  const phoneRegex = /^(\+7|8)\d{10}$/;
+  const phoneDigits = phone.replace(/\D/g, "");
+  const normalizedPhone = phoneDigits.startsWith("8")
+    ? `+7${phoneDigits.slice(1)}`
+    : phoneDigits.startsWith("7")
+      ? `+7${phoneDigits.slice(1)}`
+      : phoneDigits.length === 10
+        ? `+7${phoneDigits}`
+        : phone;
+  const isValidTelegram = telegramRegex.test(telegram);
+  const isValidPhone = phoneRegex.test(normalizedPhone);
+  const isFormValid = isValidTelegram || isValidPhone;
+  const canSubmit = address.trim() && name.trim() && isFormValid && items.length > 0;
+
+  const formatPhoneMask = (value: string): string => {
+    const digits = value.replace(/\D/g, "");
+    let base = digits;
+    if (base.startsWith("8")) {
+      base = `7${base.slice(1)}`;
+    }
+    if (!base.startsWith("7")) {
+      base = `7${base}`;
+    }
+    base = base.slice(0, 11);
+    const local = base.slice(1);
+    const p1 = local.slice(0, 3);
+    const p2 = local.slice(3, 6);
+    const p3 = local.slice(6, 8);
+    const p4 = local.slice(8, 10);
+    let out = "+7";
+    if (p1) out += ` (${p1}`;
+    if (p1.length === 3) out += ")";
+    if (p2) out += ` ${p2}`;
+    if (p3) out += `-${p3}`;
+    if (p4) out += `-${p4}`;
+    return out;
+  };
 
   const handleSubmit = async () => {
     console.log('🔘 handleSubmit called');
@@ -30,7 +69,8 @@ const Checkout = () => {
     console.log('📦 items:', items);
     console.log('📍 address:', address);
     console.log('👤 name:', name);
-    console.log('📞 contact:', contact);
+    console.log('📞 phone:', normalizedPhone);
+    console.log('✈️ telegram:', telegram);
     
     if (!canSubmit) {
       console.warn('⚠️ Cannot submit: validation failed');
@@ -54,7 +94,8 @@ const Checkout = () => {
         })),
         address,
         name,
-        phone: contact,
+        phone: isValidPhone ? normalizedPhone : undefined,
+        telegramUsername: telegram || undefined,
         deliveryType,
       });
 
@@ -102,9 +143,9 @@ const Checkout = () => {
         // Save order to localStorage for web version
         if (!initData) {
           // Web version: save phone for future order loading
-          if (contact) {
-            localStorage.setItem('user_phone', contact);
-            console.log('💾 Phone saved to localStorage:', contact);
+          if (isValidPhone) {
+            localStorage.setItem('user_phone', normalizedPhone);
+            console.log('💾 Phone saved to localStorage:', normalizedPhone);
           }
           
           // Web version: save order to localStorage
@@ -122,7 +163,7 @@ const Checkout = () => {
             deliveryPrice: estimatedDeliveryCost,
             address,
             name,
-            phone: contact,
+            phone: isValidPhone ? normalizedPhone : null,
             status: 'new',
             createdAt: new Date().toISOString(),
           });
@@ -219,11 +260,30 @@ const Checkout = () => {
                 </div>
 
                 <div className="glass-card rounded-xl p-4 border border-border/30">
-                  <label className="text-sm text-muted-foreground mb-2 block">Телефон или Telegram</label>
+                  <label className="block text-sm mb-1">Telegram</label>
                   <input
-                    value={contact}
-                    onChange={(e) => setContact(e.target.value)}
-                    placeholder="+7... или @username"
+                    value={telegram}
+                    onChange={(e) => {
+                      const value = e.target.value.trim();
+                      setTelegram(value);
+                      if (!value || telegramRegex.test(value)) {
+                        setTelegramError("");
+                      } else {
+                        setTelegramError("Формат: @username (минимум 5 символов)");
+                      }
+                    }}
+                    placeholder="@username"
+                    className="w-full bg-secondary rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground border-none outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                  />
+                  {telegramError && <p className="text-red-500 text-xs">{telegramError}</p>}
+                </div>
+
+                <div className="glass-card rounded-xl p-4 border border-border/30">
+                  <label className="text-sm text-muted-foreground mb-2 block">Телефон</label>
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(formatPhoneMask(e.target.value))}
+                    placeholder="+7 (999) 999-99-99"
                     className="w-full bg-secondary rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground border-none outline-none focus:ring-2 focus:ring-primary transition-shadow"
                   />
                 </div>
@@ -238,7 +298,7 @@ const Checkout = () => {
                   console.log('🖱️ Button clicked!');
                   handleSubmit();
                 }}
-                disabled={!canSubmit || isSubmitting}
+                disabled={!isFormValid || !canSubmit || isSubmitting}
               >
                 {isSubmitting ? "Отправка..." : "Подтвердить заказ"}
               </Button>
